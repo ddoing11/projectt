@@ -34,3 +34,17 @@ python manage.py runserver
 - 🔐 [개인 백업용 코드 (backup 폴더)](https://github.com/ddoing11/projectt/tree/main/backup)  
   전체 프로젝트 백업본으로, `venv/` 등도 포함되어 있을 수 있습니다.
 
+
+## 공유할때
+./copy_to_shared.bat
+./commit_shared.bat
+
+## 백업할 때
+./copy_to_backup.bat
+./commit_backup.bat
+
+## requirements.txt 갱신할 때
+pip freeze > requirements.txt
+git add requirements.txt
+git commit -m "📦 패키지 목록 업데이트"
+git push
