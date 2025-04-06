@@ -1,27 +1,18 @@
-# ✅ 가상환경
+# 가상환경 무시
 venv/
-.venv/
-ENV/
-env/
+backup/venv/
 
-# ✅ Python 캐시
+# Python 캐시
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 
-# ✅ Django 관련 무시 항목
-*.log
-*.pot
-local_settings.py
+# Django 관련
 db.sqlite3
-db.sqlite3-journal
 media/
 
-# ✅ 환경 파일, 시스템 파일
+# 시스템 파일
 .env
 .DS_Store
 .vscode/
-
-# ✅ 테스트/개인 백업 무시 (원하는 경우만)
-backup/
+backend/aptitude/local_settings.py

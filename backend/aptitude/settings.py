@@ -24,7 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = local_settings.SECRET_KEY
-
+try:
+    from .local_settings import *
+except ImportError:
+    print("⚠ local_settings.py가 없습니다.")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
