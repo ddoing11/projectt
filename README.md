@@ -24,7 +24,8 @@ pip install -r requirements.txt
 
 # 4. 서버 실행
 python manage.py runserver
-```bash
+
+```
 
 
 ## 📁 폴더 안내
