@@ -1,0 +1,30 @@
+### Django ###
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+settings.py
+
+
+# 가상환경 무시
+venv/
+.venv/
+ENV/
+env/
+
+# Python 관련 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VSCode 설정 무시
+.vscode/
+
+# 기타 무시할 파일
+*.log
+.DS_Store
