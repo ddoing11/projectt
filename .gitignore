@@ -15,4 +15,5 @@ media/
 .env
 .DS_Store
 .vscode/
+
 backend/aptitude/local_settings.py
