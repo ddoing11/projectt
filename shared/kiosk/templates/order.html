@@ -1,0 +1,19 @@
+{% load static %}  <!-- static 태그를 사용하겠다는 선언 -->
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>주문 페이지</title>
+</head>
+<body>
+  <h1>음성 인식으로 주문하기</h1>
+
+  <div id="output">텍스트가 여기에 표시됩니다</div>
+
+  <!-- ✅ JavaScript 불러오기 -->
+  {% load static %}
+  <script src="{% static 'js/voice_socket.js' %}"></script>
+</body>
+</html>
+
