@@ -9,5 +9,10 @@ set /p msg=백업 커밋 메시지를 입력하세요:
 
 git commit -m "%msg%"
 git push
+git add backup/
+
+set /p msg=커밋 메시지를 입력하세요 (예: 4/7 백업): 
+git commit -m "%msg%"
+git push
 
 pause
