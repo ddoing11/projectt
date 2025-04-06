@@ -26,6 +26,7 @@ pip install -r requirements.txt
 python manage.py runserver
 ```bash
 
+
 ## 📁 폴더 안내
 
 - 👉 [공유용 코드 (shared 폴더)](https://github.com/ddoing11/projectt/tree/main/shared)  
