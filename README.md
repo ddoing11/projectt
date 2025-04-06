@@ -38,15 +38,15 @@ python manage.py runserver
 
 
 ## 공유할때
-./copy_to_shared.bat
-./commit_shared.bat
+./copy_to_shared.bat  
+./commit_shared.bat  
 
 ## 백업할 때
-./copy_to_backup.bat
-./commit_backup.bat
+./copy_to_backup.bat  
+./commit_backup.bat  
 
 ## requirements.txt 갱신할 때
-pip freeze > requirements.txt
-git add requirements.txt
-git commit -m "📦 패키지 목록 업데이트"
-git push
+pip freeze > requirements.txt  
+git add requirements.txt  
+git commit -m "📦 패키지 목록 업데이트"  
+git push  
