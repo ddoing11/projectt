@@ -24,3 +24,13 @@ pip install -r requirements.txt
 
 # 4. 서버 실행
 python manage.py runserver
+
+
+## 📁 폴더 안내
+
+- 👉 [공유용 코드 (shared 폴더)](https://github.com/ddoing11/projectt/tree/main/shared)  
+  팀원들과 협업할 때 사용하는 주요 코드입니다.
+
+- 🔐 [개인 백업용 코드 (backup 폴더)](https://github.com/ddoing11/projectt/tree/main/backup)  
+  전체 프로젝트 백업본으로, `venv/` 등도 포함되어 있을 수 있습니다.
+
