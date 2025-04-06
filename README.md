@@ -1,0 +1,26 @@
+# projectt 🎤 키오스크 음성인식 시스템
+
+## 소개
+이 프로젝트는 음성 명령 기반의 키오스크 시스템입니다. 시각장애인 및 고령층을 위한 접근성 중심 설계를 목표로 합니다.
+
+## 사용 기술
+- Python
+- Django
+- Whisper API
+- WebRTC (실시간 음성 인식)
+- MySQL
+- HTML/CSS
+
+## 시작하기
+```bash
+# 1. 가상환경 생성
+python -m venv venv
+
+# 2. 가상환경 활성화 (Windows 기준)
+venv\Scripts\activate
+
+# 3. 필요한 패키지 설치
+pip install -r requirements.txt
+
+# 4. 서버 실행
+python manage.py runserver
