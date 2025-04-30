@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'aptitude.settings')
 django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
-    "http": ASGIStaticFilesHandler(django_asgi_app),  # ✅ static files 서빙
+    "http": ASGIStaticFilesHandler(django_asgi_app),  #  static files 서빙
     "websocket": AuthMiddlewareStack(
         URLRouter(
             kiosk.routing.websocket_urlpatterns

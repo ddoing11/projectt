@@ -1,0 +1,26 @@
+[
+    { "model": "kiosk.menuitem", "fields": { "category": "커피", "name": "아메리카노", "price": 2000 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "커피", "name": "카페라떼", "price": 2500 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "커피", "name": "달고나 라떼", "price": 4800 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "커피", "name": "토피넛라떼", "price": 4800 } },
+  
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "초코라떼", "price": 5200 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "녹차 라떼", "price": 5200 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "딸기 라떼", "price": 5400 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "요거트 스무디", "price": 5500 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "아이스티", "price": 3800 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "아샷추", "price": 4200 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "레몬에이드", "price": 4200 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "음료", "name": "자몽에이드", "price": 4200 } },
+  
+    { "model": "kiosk.menuitem", "fields": { "category": "차", "name": "캐모마일", "price": 4500 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "차", "name": "루이보스", "price": 4500 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "차", "name": "히비스커스", "price": 4500 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "차", "name": "얼그레이", "price": 4500 } },
+  
+    { "model": "kiosk.menuitem", "fields": { "category": "디저트", "name": "베이글", "price": 3800 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "디저트", "name": "카스테라", "price": 4200 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "디저트", "name": "딸기케이크", "price": 5400 } },
+    { "model": "kiosk.menuitem", "fields": { "category": "디저트", "name": "초코케이크", "price": 5400 } }
+  ]
+  

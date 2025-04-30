@@ -13,5 +13,5 @@ DATABASES = {
 # settings.py에 있던 시크릿 키를 아래 ''안에 입력한다.
 SECRET_KEY ='-5k2e1#i2+_b-@q*h$2w_!+4)i(7f1iqo5o0!5186w8pt^hgt_'
 
-AZURE_SPEECH_KEY = '여기에_너의_실제_키'
-AZURE_SPEECH_REGION = '여기에_너의_리전'  # 예: 'koreacentral' 또는 'eastus'
+AZURE_SPEECH_KEY = 'AiWSx0WLMN1ZkyF6i4jjLlvmwq2Yiv2EtenQdIQTS9EUTlBMoxs0JQQJ99BDACNns7RXJ3w3AAAYACOGL55e'
+AZURE_SPEECH_REGION = 'koreacentral'

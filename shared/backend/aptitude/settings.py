@@ -12,10 +12,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from . import local_settings
-import pymysql
-pymysql.install_as_MySQLdb()
-
-
+#import pymysql
+#pymysql.install_as_MySQLdb()
+import mimetypes
+mimetypes.add_type("application/javascript", ".js", True)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -133,7 +133,7 @@ STATICFILES_DIRS = [
 
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",  # 위의 STATICFILES_DIRS만 봄
-    # "django.contrib.staticfiles.finders.AppDirectoriesFinder",  <- 이거 주석처리해봐
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",  
 ]
 
 
@@ -146,3 +146,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 ASGI_APPLICATION = "aptitude.asgi.application"
+
+# settings.py 하단 근처에 다음과 같이 정확히 입력:
+import mimetypes
+mimetypes.add_type("application/javascript", ".js", True)

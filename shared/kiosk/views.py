@@ -1,133 +1,107 @@
+# kiosk/views.py
 from django.shortcuts import render
 from django.http import JsonResponse
-from .speech_processing import transcribe_audio
-from .chatbot import get_chatbot_response
-from .models import SpeechCommand, Menu, Cart
-import whisper
-import random
-import openai
+from .models import MenuItem
+import json
+import openai  # ChatGPT 호출용
+from django.views.decorators.csrf import csrf_exempt
 
-# OpenAI API 키 설정
-OPENAI_API_KEY = "your-openai-api-key"
+# [중요] 여기에 너의 openai 키를 설정해줘야 한다!
+openai.api_key = '너의-openai-api-key'
 
-# 미리 정해둔 키워드별 추천 가능한 메뉴 리스트
-menu_recommendations = {
-    "단": ["초코라떼", "바닐라 라떼", "청포도 에이드", "생딸기 라떼"],
-    "거": ["초코라떼", "토피넛 라떼", "레몬에이드"],
-    "시원한": ["아이스 아메리카노", "레몬에이드", "청포도 에이드"],
-    "따뜻한": ["카페라떼", "핫 초코", "얼그레이"]
-}
-
-# 실제 주문 가능한 메뉴 목록 및 가격
-menu_items = {
-    "아메리카노": "아메리카노 2,500원 입니다.",
-    "카페라떼": "카페라떼 3,000원 입니다.",
-    "바닐라 라떼": "바닐라 라떼 3,500원 입니다.",
-    "초코라떼": "초코라떼 4,000원 입니다.",
-    "레몬에이드": "레몬에이드 3,800원 입니다.",
-    "청포도 에이드": "청포도 에이드 3,500원 입니다.",
-    "생딸기 라떼": "생딸기 라떼 4,500원 입니다."
-}
-
+# 시작 페이지
 def start(request):
     return render(request, 'start.html')
 
 def order(request):
     return render(request, 'order.html')
 
-def speech_to_text(request):
+@csrf_exempt
+def check_menu(request):
     if request.method == "POST":
-        audio_file = request.FILES.get("audio")
-        if not audio_file:
-            return JsonResponse({"error": "No audio file provided"}, status=400)
+        data = json.loads(request.body)
+        user_text = data.get("text", "").strip()
 
-        model = whisper.load_model("base")
-        result = model.transcribe(audio_file.read())
-        user_text = result["text"]
-        words = user_text.split()
+        menu_items = MenuItem.objects.all()
+        menu_names = [item.name for item in menu_items]
 
-        command = SpeechCommand.objects.filter(input_text=user_text).first()
-        if command:
-            command.recommended += 1
-            command.save()
-            return JsonResponse({"response": command.response_text})
-
-        temperature = None
-        if "차가운" in words or "시원한" in words:
-            temperature = "ice"
-        elif "따뜻한" in words or "뜨거운" in words:
-            temperature = "hot"
-
-        matched_menu = next((word for word in words if word in menu_items), None)
-
-        recommended_menus = [item for word in words for item in menu_recommendations.get(word, [])]
+        # 메뉴 이름이 텍스트에 포함되어 있으면 매칭
+        matched_menu = next((name for name in menu_names if name in user_text), None)
 
         if matched_menu:
-            if temperature:
-                response_text = f"{menu_items[matched_menu]} ({'ICE' if temperature == 'ice' else 'HOT'})로 구매하시겠습니까?"
-            else:
-                request.session["recommendation"] = matched_menu
-                return JsonResponse({"response": "차가운 것으로 하시겠습니까, 따뜻한 것으로 하시겠습니까?"})
-
-        elif recommended_menus:
-            if "달지 않고 시원한" in user_text:
-                temperature = "ice"
-                random_menu = random.choice(recommended_menus)
-                response_text = f"{random_menu}({temperature})는 어떠세요? 구매하시겠습니까?"
-            elif "달지 않은" in user_text:
-                request.session["recommendation"] = random.choice(recommended_menus)
-                return JsonResponse({"response": "차가운 것으로 하시겠습니까, 따뜻한 것으로 하시겠습니까?"})
-            else:
-                random_menu = random.choice(recommended_menus)
-                response_text = f"{random_menu}는 어떠세요? 구매하시겠습니까?"
-                request.session["recommendation"] = random_menu
+            menu = MenuItem.objects.get(name=matched_menu)
+            return JsonResponse({
+                "found": True,
+                "menu": matched_menu,
+                "price": menu.price,
+                "category": menu.category
+            })
         else:
-            response_text = get_chatgpt_recommendation(user_text)
-
-        return JsonResponse({"response": response_text})
-
+            return JsonResponse({"found": False})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
-def get_chatgpt_recommendation(user_request):
-    openai.api_key = OPENAI_API_KEY
-    prompt = f"카페에서 제공하는 메뉴는 {list(menu_items.keys())} 입니다. 사용자가 '{user_request}' 라고 말했을 때, 가장 적절한 메뉴를 추천해주세요."
+@csrf_exempt
+def gpt_assist(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        user_text = data.get("text", "").strip()
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "system", "content": prompt}]
-    )
+        # DB에서 메뉴 이름 모음
+        menu_items = MenuItem.objects.all()
+        menu_list = "\n".join(f"{item.name} ({item.price}원)" for item in menu_items)
 
-    return response["choices"][0]["message"]["content"]
+        prompt = f"""너는 카페 직원이야.
+사용자가 "{user_text}"라고 말했다고 가정해.
+아래 메뉴 리스트 중에서 가장 어울리는 메뉴를 친절하게 추천하고, 필요하면 따듯한지, 아이스인지 물어봐.
 
+메뉴 목록:
+{menu_list}
+
+대답할 때는 자연스럽게 짧고 부드럽게 말해줘. (예: "달콤한 음료를 찾고 계시군요! 딸기라떼 추천드릴게요.")"""
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=200
+        )
+
+        gpt_reply = response['choices'][0]['message']['content'].strip()
+        return JsonResponse({"response": gpt_reply})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+@csrf_exempt
 def add_to_cart(request):
     if request.method == "POST":
-        user_text = request.POST.get("text", "")
-        words = user_text.split()
+        data = json.loads(request.body)
+        menu_name = data.get("menu")
+        options = data.get("options", {})
 
-        if any(word in ["네", "응", "좋아"] for word in words):
-            recommendation = request.session.get("recommendation")
-            temperature = request.session.get("temperature", "ice")
+        # 장바구니를 세션에 저장
+        cart = request.session.get("cart", [])
 
-            if recommendation:
-                cart_item = Cart(menu_item=Menu.objects.get(name=recommendation), option=temperature)
-                cart_item.save()
-                request.session["recommendation"] = None
-                return JsonResponse({"response": f"{recommendation}({temperature})을 장바구니에 추가했습니다. 또 주문하시겠습니까?"})
+        # 가격 계산
+        try:
+            menu = MenuItem.objects.get(name=menu_name)
+            final_price = menu.price
 
-        if any(word in ["아니", "아니요", "괜찮아"] for word in words):
-            return JsonResponse({"response": "결제 페이지로 이동합니다."})
+            # 옵션 반영
+            if options.get("size") == "크게":
+                final_price += 500
+            if options.get("shot") == "1샷추가":
+                final_price += 300
+            elif options.get("shot") == "2샷추가":
+                final_price += 600
 
+            cart.append({
+                "menu": menu_name,
+                "options": options,
+                "price": final_price
+            })
+
+            request.session["cart"] = cart
+
+            return JsonResponse({"success": True, "cart": cart})
+        except MenuItem.DoesNotExist:
+            return JsonResponse({"success": False, "error": "메뉴를 찾을 수 없습니다."})
     return JsonResponse({"error": "Invalid request"}, status=400)
-
-def checkout(request):
-    cart_items = Cart.objects.filter(ordered=False)
-    total_price = sum(getattr(item.menu_item, "price", 0) for item in cart_items)
-
-    if request.method == "POST":
-        for item in cart_items:
-            item.ordered = True
-            item.save()
-
-        return JsonResponse({"response": f"총 {total_price}원입니다. 결제가 완료되었습니다."})
-
-    return render(request, "checkout.html", {"cart_items": cart_items, "total_price": total_price})
