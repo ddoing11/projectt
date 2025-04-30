@@ -10,6 +10,7 @@
 - WebRTC (실시간 음성 인식)
 - MySQL
 - HTML/CSS
+- AZURE Speech API
 
 ## 시작하기
 ```bash
