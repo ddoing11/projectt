@@ -1,5 +1,6 @@
 import openai
-from .models import SpeechCommand
+
+from .models import MenuItem
 
 OPENAI_API_KEY = "your-chatgpt-api-key"
 

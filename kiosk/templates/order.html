@@ -1,5 +1,4 @@
-{% load static %}  <!-- static 태그를 사용하겠다는 선언 -->
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,11 +8,11 @@
 <body>
   <h1>음성 인식으로 주문하기</h1>
 
-  <div id="output">텍스트가 여기에 표시됩니다</div>
+  <div id="output" style="margin-top: 1rem; font-size: 1.2rem; color: #2b7cff;">
+    텍스트가 여기에 표시됩니다
+  </div>
 
-  <!-- ✅ JavaScript 불러오기 -->
-  {% load static %}
-  <script src="{% static 'js/voice_socket.js' %}"></script>
+  <!-- voice_socket.js를 모듈로 불러옴 -->
+  <script type="module" src="{% static 'js/voice_socket.js' %}"></script>
 </body>
 </html>
-

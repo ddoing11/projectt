@@ -2,7 +2,13 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import mimetypes
 
+# ✅ .js 파일을 정확하게 application/javascript로 인식하도록 설정
+mimetypes.add_type("application/javascript", ".js", True)
+
+# ✅ backend 경로를 모듈 경로로 추가
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
 def main():
     """Run administrative tasks."""
@@ -16,7 +22,6 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
-
 
 if __name__ == '__main__':
     main()

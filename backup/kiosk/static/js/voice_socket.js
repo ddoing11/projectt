@@ -1,63 +1,86 @@
-﻿"use strict";
+// 모듈로 인식시키기 위해 필요
+export {};
 
-const socket = new WebSocket('ws://localhost:8000/ws/audio/');
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-let mediaStream = null;
-let processor = null;
-let input = null;
+"use strict";
 
-socket.onopen = () => {
-  console.log('✅ WebSocket 연결됨');
-  checkMicrophonePermission();  // ✅ 권한 확인 후 실행
-};
+let socket;
+let recognition;
+let recognizing = false;
 
-function checkMicrophonePermission() {
-  navigator.permissions.query({ name: 'microphone' }).then(result => {
-    if (result.state === 'granted') {
-      console.log('🎤 마이크 권한 있음');
-      startRecording();
-    } else if (result.state === 'prompt') {
-      console.log('🎤 마이크 권한 요청 중');
-      requestMicrophoneAccess();
-    } else {
-      console.warn('🚫 마이크 권한 없음');
+function createWebSocket() {
+  socket = new WebSocket('ws://127.0.0.1:8002');
+
+  socket.onopen = () => {
+    console.log('✅ WebSocket 연결됨');
+  };
+
+  socket.onmessage = async (event) => {
+    const text = event.data.trim();
+    console.log('📩 서버 응답:', text);
+
+    const u = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(u);
+
+    // '음성으로 주문하시겠습니까?' 나오면 음성 인식 시작
+    if (text.includes("음성으로 주문하시겠습니까")) {
+      u.onend = () => {
+        console.log("🔊 안내 멘트 끝남, 음성 인식 시작");
+        startRecognition();
+      };
     }
-  });
-}
+  };
 
-function requestMicrophoneAccess() {
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      mediaStream = stream;
-      startRecording();
-    })
-    .catch(err => {
-      console.error('❌ 마이크 접근 실패:', err);
-    });
-}
+  socket.onclose = () => {
+    console.warn("⚠️ WebSocket 연결 종료");
+  };
 
-function startRecording() {
-  input = audioContext.createMediaStreamSource(mediaStream);
-  processor = audioContext.createScriptProcessor(4096, 1, 1);
-
-  input.connect(processor);
-  processor.connect(audioContext.destination);
-
-  processor.onaudioprocess = e => {
-    const audioData = e.inputBuffer.getChannelData(0);
-    socket.send(audioData.buffer);
+  socket.onerror = (error) => {
+    console.error("❌ WebSocket 오류:", error);
   };
 }
 
-socket.onmessage = event => {
-  const data = JSON.parse(event.data);
-  if (data.text) {
-    console.log('🗣 받은 텍스트:', data.text);
-    document.getElementById("output").innerText = data.text;
-  }
-};
+function startRecognition() {
+  if (recognizing) return;
+  
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'ko-KR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
 
-socket.onclose = () => {
-  console.log('🔌 WebSocket 연결 종료');
-  if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-};
+  recognition.start();
+  recognizing = true;
+  console.log("🎤 음성 인식 시작");
+
+  recognition.onresult = (event) => {
+    const result = event.results[0][0].transcript.trim();
+    console.log('🎤 인식된 텍스트:', result);
+
+    if (result.includes("네")) {
+      socket.send("네");
+    } else if (result.includes("아니")) {
+      socket.send("아니");
+    } else {
+      socket.send(result);
+    }
+    recognizing = false;
+    recognition.stop();
+  };
+
+  recognition.onerror = (event) => {
+    console.error('❌ 음성 인식 에러:', event.error);
+    recognizing = false;
+  };
+
+  recognition.onend = () => {
+    console.log("🛑 음성 인식 종료");
+    recognizing = false;
+  };
+}
+
+// 페이지 로드시 WebSocket 연결
+createWebSocket();
+
+// 클릭하면 'start_order' 보내기
+document.addEventListener("click", () => {
+  socket.send("start_order");
+});

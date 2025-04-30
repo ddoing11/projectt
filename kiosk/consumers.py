@@ -4,7 +4,15 @@ import azure.cognitiveservices.speech as speechsdk
 import asyncio
 from django.conf import settings
 from asgiref.sync import async_to_sync
+import wave
 
+# 이 함수는 이미 위쪽에서 정의되어 있으므로 임포트할 필요 없음
+def save_wav_from_bytes(audio_bytes, file_path):
+    with wave.open(file_path, 'wb') as wf:
+        wf.setnchannels(1)            # mono
+        wf.setsampwidth(2)            # 16-bit
+        wf.setframerate(16000)        # 16 kHz
+        wf.writeframes(audio_bytes)
 
 class AzureSTTConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -31,11 +39,12 @@ class AzureSTTConsumer(AsyncWebsocketConsumer):
                 await self.loop.run_in_executor(None, self.recognize_and_send, audio_bytes)
                 self.recognizing = False
 
+    # 이 안에서 Azure 음성 인식 처리
     def recognize_and_send(self, audio_bytes):
-        # temp 파일로 저장
         import tempfile
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(audio_bytes)
+            save_wav_from_bytes(audio_bytes, tmp.name)
             tmp_path = tmp.name
 
         speech_config = speechsdk.SpeechConfig(

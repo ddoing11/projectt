@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>음성 응답 처리</title>
+</head>
+<body>
+    <div id="output"></div>
+
+    <input type="text" id="message" placeholder="메시지 입력">
+    <button onclick="sendMessage()">전송</button>
+
+    <script>
+        // WebSocket 연결
+        const socket = new WebSocket('ws://localhost:8001');
+
+        socket.onopen = () => {
+            console.log(' WebSocket 연결됨');
+        };
+
+        // 메시지 수신 후 처리
+        socket.onmessage = (event) => {
+            const text = event.data;
+            console.log(' 받은 텍스트:', text);
+            document.getElementById("output").innerText = text;
+            speakText(text);  // 받은 텍스트 음성 출력
+        };
+
+        // WebSocket 연결 종료
+        socket.onclose = () => {
+            console.log(' WebSocket 연결 종료');
+        };
+
+        // 음성 출력 함수
+        function speakText(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            speechSynthesis.speak(utterance);
+        }
+
+        // 메시지 전송 함수
+        function sendMessage() {
+            const text = document.getElementById("message").value;
+            socket.send(text);  // 서버로 메시지 전송
+        }
+    </script>
+</body>
+</html>
