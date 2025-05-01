@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1640, user-scalable=no" />
+  <title>결제하기</title>
+  <style>
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('./fonts/BMDoHyeon.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('./fonts/Hakgyoansim.ttf') format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: #fdfaf7;
+      font-family: 'Hakgyoansim', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 120px;
+      position: relative;
+      border-bottom: 2px solid #999;
+    }
+
+    .home-button {
+      position: absolute;
+      left: 80px;
+      top: 55%;
+      transform: translateY(-50%);
+      background-color: #eceae7;
+      border: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      font-family: 'BMDoHyeon', sans-serif;
+      color: rgba(0, 0, 0, 0.5);
+      opacity: 0.7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s;
+    }
+
+    .home-button:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    .home-icon {
+      width: 60px;
+      height: 60px;
+    }
+
+    .title {
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'DalseoDarling', cursive;
+      position: absolute;
+      left: 50%;
+      top: 44%;
+      transform: translateX(-50%);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-around;
+      padding: 40px 80px;
+      border-bottom: 2px solid #999;
+      font-weight: bold;
+      font-size: 48px;
+    }
+
+    .table-content {
+      height: 1450px;
+      padding: 60px 80px 0;
+      font-size: 42px;
+      overflow-y: auto;
+    }
+
+    .total-price {
+      display: flex;
+      align-items: center;
+      padding: 50px 80px;
+      padding-left: 400px;
+      border-top: 2px solid #999;
+      font-size: 60px;
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 100px;
+      margin-top: 50px;
+    }
+
+    .btn {
+      background-color: #5d3b1a;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 53px 132px;
+      font-size: 45px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 팝업 오버레이 */
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup-overlay iframe {
+      width: 1315px;
+      height: 1282px;
+      border: none;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <button class="home-button" onclick="location.href='start.html'">
+      <img src="./images/home_icon.png" alt="Home" class="home-icon">
+      <span style="padding-top: 5px;">처음으로</span>
+    </button>
+    <div class="title">결제하기</div>
+  </div>
+
+  <div class="table-header">
+    <div>제품</div>
+    <div>수량</div>
+    <div>가격</div>
+  </div>
+
+  <div class="table-content">
+    <!-- 여기에 제품 목록 들어갈 수 있음 -->
+  </div>
+
+  <div class="total-price">
+    
+  </div>
+
+  <div class="buttons">
+    <button class="btn" onclick="history.back()">돌아가기</button>
+    <button class="btn" onclick="showPopup()">결제하기</button>
+  </div>
+
+  <!-- 팝업 오버레이 -->
+  <div id="popup-overlay">
+    <iframe src="payment_final.html"></iframe>
+  </div>
+
+  <script>
+    function showPopup() {
+      document.getElementById('popup-overlay').style.display = 'flex';
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>차 옵션 선택</title>
+  <style>
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('fonts/Hakgyoansim.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('fonts/BMDoHyeon.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      font-family: 'Hakgyoansim', sans-serif;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup {
+      width: 700px;
+      background-color: white;
+      border-radius: 12px;
+      padding: 50px 60px;
+      box-sizing: border-box;
+    }
+
+    .popup h2 {
+      text-align: center;
+      font-size: 36px;
+      font-family: 'BMDoHyeon', sans-serif;
+      margin-bottom: 20px;
+    }
+
+    .divider {
+      height: 2px;
+      background-color: #999;
+      margin: 20px 0;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-family: 'BMDoHyeon', sans-serif;
+      margin-bottom: 10px;
+    }
+
+    .option-group {
+      display: flex;
+      gap: 20px;
+    }
+
+    .option-button {
+      font-family: 'Hakgyoansim', sans-serif;
+      font-size: 24px;
+      padding: 12px 24px;
+      border: 2px solid #5c4033;
+      border-radius: 8px;
+      background-color: white;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .option-button.selected {
+      background-color: #5c4033;
+      color: white;
+    }
+
+    .option-button.hot:not(.selected) {
+      color: red;
+    }
+
+    .option-button.ice:not(.selected) {
+      color: blue;
+    }
+
+    .complete-button {
+      font-family: 'Hakgyoansim', sans-serif;
+      font-size: 28px;
+      background-color: #5c4033;
+      color: white;
+      border: none;
+      padding: 20px 60px;
+      border-radius: 30px;
+      display: block;
+      margin: 50px auto 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup">
+    <h2>옵션 선택</h2>
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">사이즈 선택</div>
+      <div class="option-group" id="size-options">
+        <button class="option-button" data-group="size">보통</button>
+        <button class="option-button" data-group="size">크게 (+ 500원)</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">핫/아이스 선택</div>
+      <div class="option-group" id="hotice-options">
+        <button class="option-button hot" data-group="hotice">핫</button>
+        <button class="option-button ice" data-group="hotice">아이스</button>
+      </div>
+    </div>
+
+    <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+  </div>
+
+  <script>
+    document.querySelectorAll(".option-button").forEach(button => {
+      button.addEventListener("click", () => {
+        const group = button.getAttribute("data-group");
+        document.querySelectorAll(`.option-button[data-group='${group}']`).forEach(btn => {
+          btn.classList.remove("selected");
+        });
+        button.classList.add("selected");
+      });
+    });
+
+    function completeSelection() {
+      const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
+      const hotice = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
+
+      if (!size || !hotice) {
+        alert("모든 옵션을 선택해 주세요.");
+        return;
+      }
+
+      alert("장바구니에 담겼습니다.");
+      document.querySelector(".popup").remove();
+    }
+  </script>
+</body>
+</html>

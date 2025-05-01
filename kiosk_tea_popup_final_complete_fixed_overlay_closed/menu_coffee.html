@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1640, user-scalable=no" />
+  <title>메뉴 - 커피</title>
+  <style>
+    /* 기본 설정 */
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('fonts/Hakgyoansim.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('fonts/BMDoHyeon.ttf') format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: #fdfaf7; /* 배경색 수정 */
+      font-family: 'Hakgyoansim', sans-serif;
+      overflow: hidden;
+    }
+
+    /* 상단 바 */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 80px 20px;
+      border-bottom: 2px solid #999;
+    }
+
+    .top-bar-title {
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'DalseoDarling', cursive;
+    }
+
+    .home-button {
+      background-color: #eceae7;
+      border: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .home-button img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .home-button span {
+      font-size: 48px;
+      font-family: 'BMDoHyeon', sans-serif;
+      opacity: 0.7;
+    }
+
+    /* 탭 메뉴 */
+    .tab-menu {
+      display: flex;
+      justify-content: space-between;
+      padding: 30px 80px;
+      margin: 20px 0 40px;
+      border-bottom: 2px solid #999;
+    }
+
+    .tab-menu button {
+      flex: 1;
+      margin: 0 10px;
+      padding: 30px 0;
+      font-size: 36px;
+      font-weight: bold;
+      background-color: #f1f1f1;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-family: 'BMDoHyeon', sans-serif;
+      cursor: pointer;
+    }
+
+    .tab-menu .active {
+      background-color: #ffe08c;
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 메뉴 영역 */
+    .menu-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 55px 100px 0;
+    }
+
+    .menu-item {
+      text-align: center;
+      border: 2px solid #ccc;
+      padding: 30px;
+      background: white;
+    }
+
+    .menu-item img {
+      height: 400px;
+    }
+
+    .menu-item .name {
+      margin-top: 30px;
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .menu-item .price {
+      font-size: 42px;
+      color: #3300cc;
+      margin-top: 15px;
+    }
+
+    /* 하단 장바구니 */
+    .bottom-box {
+      margin: 55px 100px;
+      padding: 30px;
+      background: #fff;
+      border: 2px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bottom-box .title {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .middle-line {
+      width: 800px;
+      height: 2px;
+      background-color: #ccc;
+      margin: 10px 0 20px 0;
+    }
+
+    .cart-lineup {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .cart-items {
+      display: flex;
+      gap: 30px;
+      overflow-x: auto;
+      width: 75%;
+      padding-top: 10px;
+    }
+
+    .cart-item {
+      min-width: 240px;
+      border-right: 2px solid #ccc;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .cart-item img {
+      height: 120px;
+    }
+
+    .pay-button {
+      background: #5c4033;
+      color: white;
+      font-size: 36px;
+      padding: 100px 40px;
+      border-radius: 10px;
+      font-family: 'Hakgyoansim', sans-serif;
+      margin-left: 30px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .pay-button:hover {
+      background-color: #4a2f14;
+      transform: scale(1.05);
+    }
+
+    /* 팝업 오버레이 */
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup-overlay iframe {
+      width: 1315px;
+      height: 1282px;
+      border: none;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="top-bar">
+    <button class="home-button" onclick="location.href='start.html'">
+      <img src="images/home_icon.png" alt="처음으로">
+      <span>처음으로</span>
+    </button>
+
+    <div class="top-bar-title">메뉴</div>
+    <div></div>
+  </div>
+
+  <div class="tab-menu">
+    <button class="active">커피</button>
+    <button onclick="location.href='menu_drink.html'">음료</button>
+    <button onclick="location.href='menu_tea.html'">차</button>
+    <button onclick="location.href='menu_dessert.html'">디저트</button>
+  </div>
+
+  <div class="menu-items">
+    <div class="menu-item">
+      <img src="images/americano.png" alt="아메리카노" />
+      <div class="name">아메리카노</div>
+      <div class="price">2000원</div>
+    </div>
+    <div class="menu-item">
+      <img src="images/latte.png" alt="카페 라떼" />
+      <div class="name">카페 라떼</div>
+      <div class="price">2500원</div>
+    </div>
+    <div class="menu-item">
+      <img src="images/toffee.png" alt="토피넛 라떼" />
+      <div class="name">토피넛 라떼</div>
+      <div class="price">4800원</div>
+    </div>
+    <div class="menu-item">
+      <img src="images/dalcona.png" alt="달고나 라떼" />
+      <div class="name">달고나 라떼</div>
+      <div class="price">4800원</div>
+    </div>
+  </div>
+
+  <div class="bottom-box">
+    <div class="title">선택한 메뉴</div>
+    <div class="middle-line"></div>
+    <div class="cart-lineup">
+      <div class="cart-items"></div>
+      <button class="pay-button">결제하기</button>
+    </div>
+  </div>
+
+  <div id="popup-overlay">
+    <iframe src="popup_coffee.html"></iframe>
+  </div>
+
+  <script>
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.getElementById('popup-overlay').style.display = 'flex';
+      });
+    });
+  </script>
+</body>
+</html>

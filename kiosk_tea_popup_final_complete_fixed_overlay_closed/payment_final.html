@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>결제 중</title>
+  <style>
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('fonts/Hakgyoansim.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('fonts/BMDoHyeon.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: rgba(0, 0, 0, 0.4);
+      font-family: 'Hakgyoansim', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .popup {
+      background: white;
+      width: 1315px;
+      height: 1282px;
+      border-radius: 20px;
+      padding: 80px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .popup h1 {
+      font-size: 60px;
+      font-family: 'BMDoHyeon', sans-serif;
+      margin-bottom: 40px;
+    }
+
+    .popup hr {
+      width: 100%;
+      border: none;
+      border-top: 1px solid #999;
+      margin: 30px 0;
+    }
+
+    .popup .symbol {
+      font-size: 120px;
+      align-self: flex-start;
+      padding-left: 200px;
+      margin: 20px 0;
+    }
+
+    .popup .text {
+      font-size: 48px;
+      text-align: center;
+      margin-top: 180px;
+      font-family: 'BMDoHyeon', sans-serif;
+      line-height: 2.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="popup">
+    <h1>결제</h1>
+    <hr />
+    <div class="symbol">₩</div>
+    <hr />
+    <div class="text">
+      결제 중입니다.<br>
+      잠시만 기다려 주세요.
+    </div>
+  </div>
+
+  <script>
+    setTimeout(function () {
+      window.location.href = "order_complete.html"; // ✅ 이동할 완료 페이지
+    }, 5000); // 5초 후 이동
+  </script>
+
+</body>
+</html>

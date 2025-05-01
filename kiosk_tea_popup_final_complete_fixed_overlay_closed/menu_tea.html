@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1640, user-scalable=no" />
+  <title>메뉴 - 차</title>
+  <style>
+    /* 폰트 */
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('fonts/Hakgyoansim.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('fonts/BMDoHyeon.ttf') format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: #fdfaf7;
+      font-family: 'Hakgyoansim', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 80px 20px;
+      border-bottom: 2px solid #999;
+      position: relative;
+    }
+
+    .top-bar-title {
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'DalseoDarling', cursive;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .home-button {
+      background-color: #eceae7;
+      border: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      font-family: 'BMDoHyeon', sans-serif;
+      color: rgba(0,0,0,0.5);
+      opacity: 0.7;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .home-button:active {
+      background-color: #ddd;
+      color: rgba(0,0,0,0.8);
+      transform: scale(0.95);
+    }
+
+    .tab-menu {
+      display: flex;
+      justify-content: space-between;
+      padding: 30px 80px;
+      margin: 20px 0 40px;
+      border-bottom: 2px solid #999;
+    }
+
+    .tab-menu button {
+      flex: 1;
+      margin: 0 10px;
+      padding: 30px 0;
+      font-size: 36px;
+      font-weight: bold;
+      background-color: #f1f1f1;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-family: 'BMDoHyeon', sans-serif;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .tab-menu button:active {
+      background-color: #ffe08c;
+      transform: scale(0.95);
+    }
+
+    .tab-menu .active {
+      background-color: #ffe08c;
+      box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+    }
+
+    .menu-items {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 55px 100px 0;
+    }
+
+    .menu-item {
+      text-align: center;
+      border: 2px solid #ccc;
+      padding: 30px;
+      background: white;
+    }
+
+    .menu-item img {
+      height: 400px;
+      transition: transform 0.2s;
+    }
+
+    .menu-item:active {
+      background-color: white; /* 박스는 크기 변화 없음 */
+    }
+
+    .menu-item:active img {
+      transform: scale(1.05); /* 이미지만 커짐 */
+    }
+
+    .menu-item .name {
+      margin-top: 30px;
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .menu-item .price {
+      font-size: 42px;
+      color: #3300cc;
+      margin-top: 15px;
+    }
+
+    .bottom-box {
+      margin: 55px 100px;
+      padding: 30px;
+      background: #fff;
+      border: 2px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bottom-box .title {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .middle-line {
+      width: 800px;
+      height: 2px;
+      background-color: #ccc;
+      margin: 10px 0 20px 0;
+    }
+
+    .cart-lineup {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .cart-items {
+      display: flex;
+      gap: 30px;
+      overflow-x: auto;
+      width: 75%;
+      padding-top: 10px;
+    }
+
+    .cart-item {
+      min-width: 240px;
+      border-right: 2px solid #ccc;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .cart-item img {
+      height: 120px;
+    }
+
+    .pay-button {
+      background: #5c4033;
+      color: white;
+      font-size: 36px;
+      padding: 135px 35px;
+      border-radius: 15px;
+      font-family: 'Hakgyoansim', sans-serif;
+      margin-left: 30px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+
+    .pay-button:active {
+      background-color: #4a2f14;
+      transform: scale(0.95);
+    }
+
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup-overlay iframe {
+      width: 1315px;
+      height: 1282px;
+      border: none;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <button class="home-button" onclick="location.href='start.html'">
+      <img src="images/home_icon.png" alt="처음으로" style="width: 60px; vertical-align: middle;">
+      <span>처음으로</span>
+    </button>
+
+    <div class="top-bar-title">메뉴</div>
+    <div></div>
+  </div>
+
+  <div class="tab-menu">
+    <button onclick="location.href='menu_coffee.html'">커피</button>
+    <button onclick="location.href='menu_drink.html'">음료</button>
+    <button class="active">차</button>
+    <button onclick="location.href='menu_dessert.html'">디저트</button>
+  </div>
+
+  <div class="menu-items">
+    <div class="menu-item" onclick="addToCart('히비스커스', 4500)">
+      <img src="images/히비스커스.png" alt="히비스커스" />
+      <div class="name">히비스커스</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item" onclick="addToCart('캐모마일', 4500)">
+      <img src="images/캐모마일.png" alt="캐모마일" />
+      <div class="name">캐모마일</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item" onclick="addToCart('루이보스', 4500)">
+      <img src="images/루이보스.png" alt="루이보스" />
+      <div class="name">루이보스</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item" onclick="addToCart('얼그레이', 4500)">
+      <img src="images/얼그레이.png" alt="얼그레이" />
+      <div class="name">얼그레이</div>
+      <div class="price">4500원</div>
+    </div>
+  </div>
+
+  <div class="bottom-box">
+    <div class="title">선택한 메뉴</div>
+    <div class="middle-line"></div>
+    <div class="cart-lineup">
+      <div class="cart-items"></div>
+      <button class="pay-button" onclick="location.href='pay_all.html'">결제하기</button>
+    </div>
+  </div>
+
+  <div id="popup-overlay">
+    <iframe src="popup_drink.html"></iframe>
+  </div>
+
+  <script>
+    function addToCart(itemName, price) {
+      const cartItems = document.querySelector(".cart-items");
+      const newItem = document.createElement("div");
+      newItem.classList.add("cart-item");
+      newItem.innerHTML = `
+        <img src="images/${itemName}.png" alt="${itemName}">
+        <div>${itemName}<br><span style="font-size: 34px;">${price}원</span></div>
+        <div>
+          <button class="quantity-btn" onclick="decreaseQuantity(this)">-</button>
+          <span class="quantity-span">1</span>
+          <button class="quantity-btn" onclick="increaseQuantity(this)">+</button>
+        </div>
+      `;
+      cartItems.appendChild(newItem);
+    }
+
+    function decreaseQuantity(button) {
+      const quantitySpan = button.nextElementSibling;
+      let quantity = parseInt(quantitySpan.innerText);
+      if (quantity > 1) {
+        quantity--;
+        quantitySpan.innerText = quantity;
+      }
+    }
+
+    function increaseQuantity(button) {
+      const quantitySpan = button.previousElementSibling;
+      let quantity = parseInt(quantitySpan.innerText);
+      quantity++;
+      quantitySpan.innerText = quantity;
+    }
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.getElementById('popup-overlay').style.display = 'flex';
+      });
+    });
+  </script>
+
+</body>
+</html>
