@@ -5,6 +5,11 @@ from .models import MenuItem
 import json
 import openai  # ChatGPT 호출용
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.http import HttpResponse
+
+def voice_socket_dummy(request):
+    return HttpResponse("voice_socket dummy - iframe용")
 
 # [중요] 여기에 너의 openai 키를 설정해줘야 한다!
 openai.api_key = '너의-openai-api-key'
@@ -15,6 +20,9 @@ def start(request):
 
 def order(request):
     return render(request, 'order.html')
+
+def voice_socket_view(request):
+    return render(request, 'voice_socket.html')
 
 @csrf_exempt
 def check_menu(request):

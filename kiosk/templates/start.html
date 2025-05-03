@@ -4,11 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <title>키오스크 시작</title>
-
-  <!-- ✅ 캐시 우회를 위한 버전 쿼리 적용 -->
-  <script type="module" src="{% static 'js/voice_socket.js' %}?v=20240503"></script>
+  <script src="{% static 'js/voice_socket.js' %}?v=20240503"></script>
+  <style>
+    body {
+      text-align: center;
+      margin-top: 20%;
+      cursor: pointer; /* 포인터 커서 추가 */
+      user-select: none; /* 텍스트 선택 방지 */
+    }
+    h1 {
+      font-size: 2em;
+    }
+  </style>
 </head>
-<body>
-  <h1 style="text-align:center; margin-top: 20%;">화면을 터치하여<br>음성 주문을 시작하세요</h1>
+<body onclick="startOrder()"> <!-- 전체 body에 클릭 이벤트 적용 -->
+  <h1>화면을 터치하여<br>음성 주문을 시작하세요</h1>
 </body>
 </html>
