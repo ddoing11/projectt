@@ -1,42 +1,74 @@
-// 모듈로 인식시키기 위해 필요
-export {};
-
-"use strict";
+﻿"use strict";
 
 let socket;
-let state = "waiting"; // 초기 상태
-let selectedMenu = "";
-let selectedCategory = "";
-let tempOrder = {}; // 임시 주문 저장용
-let optionStep = 0; // 옵션 질문 단계 (0: 사이즈, 1: 온도, 2: 샷추가)
+let recognition;
+let recognizing = false;
+let resumeHandled = false;  // ✅ 상태 복원 응답 후 인식 시작 여부
 
 function createWebSocket() {
-  socket = new WebSocket('ws://127.0.0.1:8002');
+  socket = new WebSocket('web-production-7c101.up.railway.app');
+  
 
   socket.onopen = () => {
     console.log('✅ WebSocket 연결됨');
+
+    if (localStorage.getItem("continueRecognition") === "true") {
+      localStorage.removeItem("continueRecognition");
+      console.log("🔁 페이지 전환 후 자동 음성 인식 재시작");
+      socket.send("resume_from_menu"); // ✅ 서버에 상태 복원 요청만 먼저 전송
+      startRecognition();
+    }
   };
 
-  socket.onmessage = async (event) => {
+  socket.onmessage = (event) => {
     const text = event.data.trim();
-    console.log('📩 받은 텍스트:', text);
+    console.log('📩 서버 응답:', text);
 
-    if (text === "음성으로 주문하시겠습니까?") {
-      speakText(text);
-      state = "waiting";
-    } else if (text.includes("음성 주문을 시작합니다")) {
-      state = "ordering";
-      speakText(text);
-    } else if (text.includes("음성 인식을 종료합니다")) {
-      state = "waiting";
-      speakText(text);
-    } else {
-      // 나머지는 상태 기반으로 처리
-      if (state === "ordering") {
-        await handleMenuSelection(text);
-      } else if (state === "optioning") {
-        await handleOptionSelection(text);
+    // ✅ resume_from_menu 이후의 첫 응답에서 음성인식 시작
+    if (!resumeHandled && (
+      text.includes("다시 메뉴를 말씀해주세요") ||
+      text.includes("옵션 선택을 진행할까요") ||
+      text.includes("장바구니에 담았습니다")
+    )) {
+      resumeHandled = true;
+      console.log("🎤 서버 응답 후 음성 인식 시작");
+      startRecognition();
+      return;
+    }
+
+    // 🎯 페이지 이동 명령 처리
+    if (text === "goto_menu") {
+      console.log("📢 서버 지시: /order 페이지로 이동");
+      localStorage.setItem("continueRecognition", "true");
+      window.location.href = "/order";
+      return;
+    }
+
+    if (text === "goto_start") {
+      console.log("📢 서버 지시: /start 페이지로 이동");
+    
+      // ✅ 음성 인식 중지
+      if (recognizing && recognition) {
+        recognizing = false;
+        recognition.stop();
+        console.log("🛑 음성 인식 중단 후 페이지 이동");
       }
+    
+      window.location.href = "/start";
+      return;
+    }
+    
+
+
+    // 🎯 음성 안내 멘트 이후 마이크 계속 켜기
+    if (
+      /음성.*주문.*시겠습니까/.test(text) ||
+      /음성 주문.*시작합니다/.test(text) ||
+      /더 추가할 메뉴/.test(text) ||
+      /메뉴.*말씀/.test(text)
+    ) {
+      console.log("🎤 음성인식 시작 조건 충족됨 → startRecognition 호출");
+      startRecognition();
     }
   };
 
@@ -49,117 +81,86 @@ function createWebSocket() {
   };
 }
 
-async function handleMenuSelection(text) {
-  const res = await fetch("http://127.0.0.1:8000/check-menu/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text })
-  });
+function startRecognition() {
+  if (recognizing) return;
 
-  const data = await res.json();
-  console.log("🔍 menu check 결과:", data);
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'ko-KR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.continuous = true;
 
-  if (data.match === true) {
-    selectedMenu = data.menu;
-    selectedCategory = data.category;
-    tempOrder = { menu: selectedMenu, category: selectedCategory, price: data.price };
-    optionStep = 0;
-    state = "optioning";
-    speakText("사이즈를 선택해 주세요. 보통 또는 크게 중에서 골라주세요.");
-  } else {
-    const gptRes = await fetch("http://127.0.0.1:8000/gpt-assist/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+  recognition.onstart = () => {
+    console.log("🎙️ 마이크 켜짐 (onstart)");
+  };
+
+  recognition.onspeechstart = () => {
+    console.log("🔉 사용자 발화 감지됨");
+  };
+
+  recognition.onresult = (event) => {
+    const result = event.results[event.results.length - 1][0].transcript.trim();
+    console.log('🎤 인식된 텍스트:', result);
+
+    let cleanText = result.replace(/\s/g, '').toLowerCase();
+
+    ["음성으로주문하시겠습니까", "음성주문을시작합니다", "어떤메뉴를원하세요"].forEach(phrase => {
+      if (cleanText.startsWith(phrase)) {
+        cleanText = cleanText.slice(phrase.length);
+      }
     });
-    const gptData = await gptRes.json();
-    speakText(gptData.response);
-    state = "ordering";
-  }
-}
 
-async function handleOptionSelection(text) {
-  if (optionStep === 0) {
-    if (text.includes("보통") || text.includes("기본")) {
-      tempOrder.size = "보통";
-    } else if (text.includes("크게")) {
-      tempOrder.size = "크게";
-      tempOrder.price += 500;
-    } else {
-      speakText("다시 말씀해 주세요. 보통 또는 크게 중에서 선택해 주세요.");
+    const positives = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ"];
+    if (positives.includes(cleanText)) {
+      console.log("✅ 긍정 응답 → 서버로 전송");
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(result);
+      }
       return;
     }
-    optionStep++;
-    speakText("핫 또는 아이스를 선택해 주세요.");
-  } else if (optionStep === 1) {
-    if (text.includes("핫")) {
-      tempOrder.temperature = "핫";
-    } else if (text.includes("아이스")) {
-      tempOrder.temperature = "아이스";
-    } else {
-      speakText("다시 말씀해 주세요. 핫 또는 아이스 중에서 선택해 주세요.");
+
+    const phrasesToIgnore = [
+      "음성으로 주문하시겠습니까",
+      "음성 주문을 시작합니다",
+      "어떤 메뉴를 원하세요"
+    ];
+    const shouldIgnore = phrasesToIgnore.some(p =>
+      cleanText.includes(p.replace(/\s/g, '').toLowerCase())
+    );
+    if (shouldIgnore) {
+      console.log("⏭️ 안내 문장은 전송 생략됨");
       return;
     }
-    if (tempOrder.category === "coffee" || tempOrder.category === "drink") {
-      optionStep++;
-      speakText("샷 추가를 원하시나요? 1샷 추가, 2샷 추가, 추가 안함 중에서 선택해 주세요.");
-    } else {
-      finalizeOrder();
+
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(result);
     }
-  } else if (optionStep === 2) {
-    if (text.includes("1샷") || text.includes("한 샷")) {
-      tempOrder.shot = 1;
-      tempOrder.price += 300;
-    } else if (text.includes("2샷") || text.includes("두 샷")) {
-      tempOrder.shot = 2;
-      tempOrder.price += 600;
-    } else if (text.includes("안함") || text.includes("추가 안함")) {
-      tempOrder.shot = 0;
-    } else {
-      speakText("다시 말씀해 주세요. 1샷 추가, 2샷 추가, 추가 안함 중에서 선택해 주세요.");
-      return;
+  };
+
+  recognition.onerror = (event) => {
+    console.error('❌ 음성 인식 에러:', event.error);
+  };
+
+  recognition.onend = () => {
+    console.warn("🛑 음성 인식 종료됨 → 재시작 시도");
+    if (recognizing) {
+      recognition.start();
     }
-    finalizeOrder();
-  }
+  };
+
+  recognition.start();
+  recognizing = true;
+  console.log("🎤 음성 인식 시작");
 }
 
-function finalizeOrder() {
-  console.log("🧾 최종 주문:", tempOrder);
-  speakText(`주문 완료: ${tempOrder.menu}, ${tempOrder.size} 사이즈, ${tempOrder.temperature}, 총 ${tempOrder.price}원입니다.`);
+document.addEventListener("DOMContentLoaded", () => {
+  window.speechSynthesis.cancel();
+  createWebSocket();
 
-  fetch("http://127.0.0.1:8000/add-to-cart/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(tempOrder)
-  });
-
-  tempOrder = {};
-  selectedMenu = "";
-  selectedCategory = "";
-  optionStep = 0;
-  state = "waiting";
-}
-
-// 🔊 안정적으로 speak 처리
-function speakText(text, onEnd = null) {
-  window.speechSynthesis.cancel();  // 기존 출력 중단
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "ko-KR";
-  if (onEnd) utterance.onend = onEnd;
-  speechSynthesis.speak(utterance);
-}
-
-// 🔌 WebSocket 연결
-createWebSocket();
-
-// 👆 화면 클릭 시 음성 주문 안내
-document.addEventListener("click", () => {
-  if (state === "waiting") {
-    socket.send("start_order");
-
-    // TTS가 잘 들리도록 약간의 delay 줌
-    setTimeout(() => {
-      speakText("음성으로 주문하시겠습니까?");
-    }, 100);
-  }
+  document.body.addEventListener("click", () => {
+    console.log("🖱️ 화면 터치 → start_order 전송");
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send("start_order");
+    }
+  }, { once: true });
 });

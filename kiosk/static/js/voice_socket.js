@@ -6,7 +6,8 @@ let recognizing = false;
 let resumeHandled = false;  // ✅ 상태 복원 응답 후 인식 시작 여부
 
 function createWebSocket() {
-  socket = new WebSocket('ws://localhost:8002');
+  socket = new WebSocket('web-production-7c101.up.railway.app');
+  
 
   socket.onopen = () => {
     console.log('✅ WebSocket 연결됨');
