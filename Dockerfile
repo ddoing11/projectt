@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     git \
     curl \
-    pkg-config \            # ← ✅ 여기가 핵심
+    pkg-config \            
     libffi-dev \
     libssl-dev \
     default-libmysqlclient-dev \
