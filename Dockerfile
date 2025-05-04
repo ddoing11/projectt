@@ -1,16 +1,19 @@
 FROM python:3.10-slim
 
+# 시스템 패키지 설치 (mysqlclient와 기타 의존성 해결 포함)
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     g++ \
+    git \
     curl \
+    pkg-config \            # ← ✅ 여기가 핵심
     libffi-dev \
     libssl-dev \
     default-libmysqlclient-dev \
-    python3-dev \
-    git \
+    libgl1 \
     ffmpeg \
+    python3-dev \
     && apt-get clean
 
 WORKDIR /app
@@ -18,7 +21,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install --upgrade pip \
- && pip install wheel \
+ && pip install wheel setuptools \
  && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
