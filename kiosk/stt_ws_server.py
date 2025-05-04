@@ -374,8 +374,9 @@ async def echo(websocket):
         client_states.pop(websocket, None)
 
 async def main():
-    async with websockets.serve(echo, "localhost", 8002):
-        print("✅ WebSocket 서버가 8002번 포트에서 실행 중")
+    port = int(os.environ.get("PORT", 8002))  # Railway에서 제공한 PORT를 사용
+    async with websockets.serve(echo, "0.0.0.0", port):  # ← 반드시 "0.0.0.0"
+        print(f"✅ WebSocket 서버가 {port}번 포트에서 실행 중")
         await asyncio.Future()
 
 if __name__ == "__main__":
