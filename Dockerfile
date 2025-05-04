@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+ENV PYTHONPATH="${PYTHONPATH}:/app/backend"
+
 COPY requirements.txt .
 
 RUN pip install --upgrade pip \
