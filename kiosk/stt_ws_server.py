@@ -27,10 +27,20 @@ connected_clients = set()
 client_states = {}
 
 def is_positive(text):
-    return any(word in text for word in ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ"])
+    positive_words = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ", "좋습니다", "그렇죠"]
+    return match_fuzzy(text, positive_words)
+
 
 def is_negative(text):
-    return any(word in text for word in ["아니", "싫어", "안돼", "노"])
+    negative_words = ["아니", "싫어", "안돼", "노", "그만", "아니요", "안 할래"]
+    return match_fuzzy(text, negative_words)
+
+def match_fuzzy(text, candidates):
+    for word in candidates:
+        ratio = difflib.SequenceMatcher(None, text, word).ratio()
+        if ratio > 0.7:
+            return True
+    return False
 
 def synthesize_speech(text):
     speech_config = SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
@@ -97,6 +107,7 @@ async def echo(websocket):
                 if elapsed >= 4:
                     response_text = "사이즈를 다시 말씀해주세요. 보통 또는 큰 사이즈 중 하나를 선택해주세요."
                     state["step"] = "choose_size"
+                    state["last_question"] = response_text
                     await websocket.send(response_text)
                     synthesize_speech(response_text)
                 await asyncio.sleep(1)
@@ -107,6 +118,7 @@ async def echo(websocket):
                 if elapsed >= 4:
                     response_text = "온도를 다시 말씀해주세요. 핫 또는 아이스로 대답해 주세요."
                     state["step"] = "choose_temp"
+                    state["last_question"] = response_text
                     await websocket.send(response_text)
                     synthesize_speech(response_text)
                 await asyncio.sleep(1)
@@ -131,6 +143,14 @@ async def echo(websocket):
             cleaned_text = clean_input(text)
             print(f"🧹 정제된 텍스트: '{cleaned_text}'")
             print(f"🧭 현재 상태: {state['step']}")
+
+            if "last_question" in state and state["last_question"]:
+                question_cleaned = clean_input(state["last_question"])
+                if question_cleaned and question_cleaned in cleaned_text:
+                    cleaned_text = cleaned_text.replace(question_cleaned, "")
+                    print(f"🧹 시스템 질문 제거 후 텍스트: '{cleaned_text}'")
+
+
 
             if not cleaned_text:
                 continue
@@ -219,6 +239,10 @@ async def echo(websocket):
                 else:
                     response_text = "핫 또는 아이스를 선택해주세요."
                     state["step"] = "choose_temp"
+                    state["last_question"] = response_text 
+                    await websocket.send(response_text)
+                    synthesize_speech(response_text)
+                    continue  
 
             elif state["step"] == "choose_temp":
                 if "아이스" in cleaned_text:
@@ -238,6 +262,11 @@ async def echo(websocket):
                 else:
                     response_text = "샷 추가하시겠습니까?"
                     state["step"] = "ask_shot"
+                    state["last_question"] = response_text  # ❗️이거 추가
+                    await websocket.send(response_text)
+                    synthesize_speech(response_text)
+                    continue
+
 
             elif state["step"] == "ask_shot":
                 if "아니" in cleaned_text:
@@ -334,6 +363,7 @@ async def echo(websocket):
                 response_text = "죄송합니다. 다시 말씀해주세요."
 
             if response_text:
+                state["last_question"] = response_text
                 await websocket.send(response_text)
                 synthesize_speech(response_text)
 
