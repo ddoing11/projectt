@@ -2,19 +2,8 @@
 FROM python:3.10-slim
 
 # 시스템 패키지 설치 (필요한 빌드 도구 포함)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    gcc \
-    libffi-dev \
-    libssl-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    libmysqlclient-dev \
-    git \
-    ffmpeg \
-    && apt-get clean
+RUN apt-get update && apt-get install -y build-essential gcc libffi-dev libssl-dev default-libmysqlclient-dev
+
 
 # 작업 디렉토리 설정
 WORKDIR /app
