@@ -117,3 +117,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Azure STT
 AZURE_SPEECH_KEY = os.environ.get('AZURE_SPEECH_KEY', '')
 AZURE_SPEECH_REGION = os.environ.get('AZURE_SPEECH_REGION', '')
+
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass
