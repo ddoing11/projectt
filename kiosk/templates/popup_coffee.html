@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>옵션 선택</title>
+  <script src="{% static 'js/voice_socket_main.js' %}?v=버전"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1315px;
+      height: 1282px;
+      overflow: hidden;
+      background-color: rgba(0, 0, 0, 0.4);
+      font-family: 'Hakgyoansim', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .popup {
+      background: white;
+      width: 1315px;
+      height: 1282px;
+      padding: 80px;
+      box-sizing: border-box;
+      font-family: 'BMDoHyeon', sans-serif;
+    }
+
+    .popup h2 {
+      font-size: 52px;
+      text-align: center;
+      margin-bottom: 40px;
+      font-weight: bold;
+    }
+
+    .divider {
+      height: 2px;
+      background-color: #999;
+      margin: 40px 0;
+    }
+
+    h3 {
+      font-size: 42px;
+      margin: 20px 0;
+    }
+
+    .option-group {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .option-button {
+      font-family: 'Hakgyoansim', sans-serif;
+      font-size: 36px;
+      padding: 20px 40px;
+      border: 2px solid #5c4033;
+      border-radius: 10px;
+      background: white;
+      color: #000;
+      cursor: pointer;
+    }
+
+    .option-button.selected {
+      background-color: #5c4033;
+      color: white;
+    }
+
+    .option-button.hot:not(.selected) {
+      color: red;
+    }
+
+    .option-button.ice:not(.selected) {
+      color: blue;
+    }
+
+    .complete-button {
+      display: block;
+      font-family: 'Hakgyoansim', sans-serif;
+      font-size: 40px;
+      margin: 60px auto 0;
+      background: #5c4033;
+      color: white;
+      padding: 30px 100px;
+      border-radius: 50px;
+      cursor: pointer;
+      border: none;
+    }
+    button {
+      transition: all 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(1.10);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="popup">
+    <h2>옵션 선택</h2>
+    <div class="divider"></div>
+
+    <h3>사이즈 선택</h3>
+    <div class="option-group" id="size-options">
+      <button class="option-button" data-group="size">보통</button>
+      <button class="option-button" data-group="size">크게 (+500원)</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>핫/아이스 선택</h3>
+    <div class="option-group" id="hotice-options">
+      <button class="option-button hot" data-group="hotice">핫</button>
+      <button class="option-button ice" data-group="hotice">아이스</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>샷 추가</h3>
+    <div class="option-group" id="shot-options">
+      <button class="option-button" data-group="shot">안 함</button>
+      <button class="option-button" data-group="shot">1번 (+300원)</button>
+      <button class="option-button" data-group="shot">2번 (+600원)</button>
+    </div>
+
+    <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+  </div>
+
+  <script>
+    // 옵션 버튼 클릭 처리
+    document.querySelectorAll(".option-button").forEach(button => {
+      button.addEventListener("click", () => {
+        const group = button.getAttribute("data-group");
+        document.querySelectorAll(`.option-button[data-group='${group}']`).forEach(btn => {
+          btn.classList.remove("selected");
+        });
+        button.classList.add("selected");
+      });
+    });
+
+    // 선택 완료 함수
+    function completeSelection() {
+      const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
+      const hotice = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
+      const shot = document.querySelector(".option-button[data-group='shot'].selected")?.innerText;
+
+      if (!size || !hotice || !shot) {
+        alert("모든 옵션을 선택해 주세요.");
+        return;
+      }
+
+      // 부모창으로 데이터 전송
+      window.parent.postMessage({
+        type: "popup-complete",
+        options: `${size}, ${hotice}, ${shot}`
+      }, "*");
+
+      // ✅ 선택된 버튼 초기화
+      document.querySelectorAll(".option-button.selected").forEach(btn => {
+        btn.classList.remove("selected");
+      });
+    }
+  </script>
+</body>
+</html>
