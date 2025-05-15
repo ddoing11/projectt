@@ -7,6 +7,12 @@ import difflib
 import time
 from asgiref.sync import sync_to_async
 from difflib import SequenceMatcher
+from playsound import playsound
+
+sound_path = "C:/SoundAssets/ding.wav"
+
+
+
 
 # Django 설정
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -60,12 +66,37 @@ def has_order_intent(text):
     order_keywords = ["주세요", "주문", "먹고", "마시고", "갖고", "주라", "하고", "시킬게", "시키고", "줘", "할래"]
     return any(k in text for k in order_keywords)
     
-def synthesize_speech(text):
+
+
+
+async def synthesize_speech(text, websocket=None, activate_mic=True):
     speech_config = SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
     audio_config = AudioOutputConfig(use_default_speaker=True)
     synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+
+
+
     result = synthesizer.speak_text_async(text).get()
+
+    if result.reason == ResultReason.SynthesizingAudioCompleted:
+        playsound(sound_path)  # ✅ 띵 소리
+
+        if activate_mic and websocket:
+            # 📏 문장 길이 기반 마이크 ON 대기 시간 계산
+            length = len(text)
+            base_delay = 0.001   # 띵 소리 이후 기본 대기
+            speak_time = length  * 0.01  # 글자당 0.02초
+
+            delay = base_delay + speak_time
+            print(f"⏱️ 마이크 ON까지 대기: {delay:.2f}초 (문장 길이: {length}자)")
+            await asyncio.sleep(delay)
+            await websocket.send("mic_on")
+
     return result.reason == ResultReason.SynthesizingAudioCompleted
+
+
+
+
 
 def clean_input(text):
     original_text = text  # 백업
@@ -85,7 +116,7 @@ def clean_input(text):
         "다시메뉴를말씀해주세요", "다시말씀해주세요",
         "같은옵션으로주문할까요", "옵션을진행할까요", "아메리카노다시주문하시겠어요",
         "같은옵션으로주문할까요네또는아니요로말씀해주세요",  # 완전한 문장도 포함
-        "옵션을진행할까요네또는아니요로말씀해주세요", "4 추가하시겠습니다 ", "동일한 옵션으로 하나 더 담을까요", "추가 주문 여부를 다시 말씀해 주세요", "메뉴 있으신가요", "음성으로주문하시겠습니다", "차 추가하시겠습니까", "사추가여부를다시", "사추가 여부를 다시 말씀해 주세요", "사 추가하시겠습니다", "큰 사이즈는 500원이 추가됩니다", "2,500원입니다", "어떤 메뉴를 원하세요"
+        "옵션을진행할까요네또는아니요로말씀해주세요", "4 추가하시겠습니다 ", "동일한 옵션으로 하나 더 담을까요", "추가 주문 여부를 다시 말씀해 주세요", "메뉴 있으신가요", "음성으로주문하시겠습니다", "차 추가하시겠습니까", "사추가여부를다시", "사추가 여부를 다시 말씀해 주세요", "사 추가하시겠습니다", "큰 사이즈는 500원이 추가됩니다", "2,500원입니다", "어떤 메뉴를 원하세요", "간단한 식사 대용으로도 좋습니다", "큰 사이즈는 500원이 추가됩니다"
     ]
     
     # ✅ 시스템 질문 유사 시작문 제거
@@ -277,8 +308,10 @@ async def echo(websocket):
                 if elapsed >= 4:
                     response_text = "추가 주문 여부를 다시 말씀해주세요."
                     state["step"] = "confirm_additional"
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                 await asyncio.sleep(1)  # 추가: 1초 간격으로 체크
                 continue
 
@@ -287,8 +320,10 @@ async def echo(websocket):
                 if elapsed >= 4:
                     response_text = "샷 추가 여부를 다시 말씀해주세요. 네 또는 아니요로 대답해 주세요."
                     state["step"] = "ask_shot"
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                 await asyncio.sleep(1)
                 continue
 
@@ -298,8 +333,10 @@ async def echo(websocket):
                     response_text = "사이즈를 다시 말씀해주세요. 보통 또는 큰 사이즈 중 하나를 선택해주세요."
                     state["step"] = "choose_size"
                     state["last_question"] = response_text
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                 await asyncio.sleep(1)
                 continue
             
@@ -309,8 +346,10 @@ async def echo(websocket):
                     response_text = "온도를 다시 말씀해주세요. 핫 또는 아이스로 대답해 주세요."
                     state["step"] = "choose_temp"
                     state["last_question"] = response_text
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                 await asyncio.sleep(1)
                 continue
 
@@ -318,6 +357,19 @@ async def echo(websocket):
             text = message.strip()
             print(f"📨 받은 메시지: {text}")
             
+            # ✅ 항상 초기화
+            cleaned_text = clean_input(text)
+            cleaned_text = fuzzy_remove_question(cleaned_text, state.get("last_question", ""))
+            last_gpt_reply = state["gpt_messages"][-1]["content"] if state["gpt_messages"] else ""
+            cleaned_text = strip_gpt_response_prefix(cleaned_text, last_gpt_reply)
+
+
+            if text == "resume_from_menu":
+                print("🔁 클라이언트 재연결 → 메뉴 선택 상태로 복원됨")
+                state["step"] = "await_menu"
+                response_text = "음성 주문을 시작합니다. 어떤 메뉴를 원하세요?"
+                await synthesize_speech(response_text, websocket, activate_mic=True)
+                continue
 
             if text == "start_order":
                 response_text = "음성으로 주문하시겠습니까?"
@@ -332,84 +384,94 @@ async def echo(websocket):
                     "category": None
                 })
                 await websocket.send(response_text)
-                synthesize_speech(response_text)
+                await synthesize_speech(response_text, websocket)
+
                 continue
 
-            if text == "resume_from_menu":
-                print("🔁 클라이언트 재연결 → 메뉴 선택 상태로 복원됨")
-                state["step"] = "await_menu"
-                continue
 
-            cleaned_text = clean_input(text)
-            cleaned_text = fuzzy_remove_question(cleaned_text, state.get("last_question", ""))
-
-            last_gpt_reply = state["gpt_messages"][-1]["content"] if state["gpt_messages"] else ""
-            cleaned_text = strip_gpt_response_prefix(cleaned_text, last_gpt_reply)
             
-            # 🔒 빈 입력 무시
-            if not cleaned_text.strip():
-                print(f"⚠️ 빈 입력 무시: '{cleaned_text}'")
-                continue
+            if state["step"] == "await_start":
+                cleaned_text = clean_input(text)
+                cleaned_text = fuzzy_remove_question(cleaned_text, state.get("last_question", ""))
+                last_gpt_reply = state["gpt_messages"][-1]["content"] if state["gpt_messages"] else ""
+                cleaned_text = strip_gpt_response_prefix(cleaned_text, last_gpt_reply)
+
+                if is_positive(cleaned_text):
+                    await websocket.send("goto_menu")  # 🚀 이동만 처리
+                    await asyncio.sleep(0.3)  # 💡 약간 대기 (클라이언트 연결 안정화)
+                    continue
+
+
+                # 🔒 빈 입력 무시
+                if not cleaned_text.strip():
+                    print(f"⚠️ 빈 입력 무시: '{cleaned_text}'")
+                    continue
+                
+                # 마지막 catch-all fallback 처리 전에 추가
+                if state["step"] == "announce_menu_prompt":
+                    print("🛑 announce_menu_prompt 상태 → 입력 무시")
+                    continue
 
          
-            # 🔒 의미 없는 단독 음절 소음 무시 (단, 긍정/부정 응답 또는 특정 단계는 예외)
-            if len(cleaned_text.strip()) <= 1 and not is_positive(cleaned_text) and not is_negative(cleaned_text):
-                # 단, choose_temp 상태일 때는 '핫' 같은 응답 허용
-                if state["step"] != "choose_temp":
-                    print(f"⚠️ 너무 짧은 소리 무시: '{cleaned_text}'")
-                    continue
-                else:
-                    print(f"✅ choose_temp 단계에서 짧은 응답 허용: '{cleaned_text}'")
+                # 🔒 의미 없는 단독 음절 소음 무시 (단, 긍정/부정 응답 또는 특정 단계는 예외)
+                if len(cleaned_text.strip()) <= 1 and not is_positive(cleaned_text) and not is_negative(cleaned_text):
+                    # 단, choose_temp 상태일 때는 '핫' 같은 응답 허용
+                    if state["step"] != "choose_temp":
+                        print(f"⚠️ 너무 짧은 소리 무시: '{cleaned_text}'")
+                        continue
+                    else:
+                        print(f"✅ choose_temp 단계에서 짧은 응답 허용: '{cleaned_text}'")
 
-
-           
 
             
-            if SequenceMatcher(None, cleaned_text, clean_input(last_gpt_reply)).ratio() > 0.9:
-                print("⚠️ GPT 응답과 유사한 입력 → 무시")
-                continue
+
+                
+                if SequenceMatcher(None, cleaned_text, clean_input(last_gpt_reply)).ratio() > 0.9:
+                    print("⚠️ GPT 응답과 유사한 입력 → 무시")
+                    continue
 
 
-            print(f"🧹 정제된 텍스트: '{cleaned_text}'")
-            print(f"🧭 현재 상태: {state['step']}")
+                print(f"🧹 정제된 텍스트: '{cleaned_text}'")
+                print(f"🧭 현재 상태: {state['step']}")
 
 
 
-            if not cleaned_text:
-                continue
+                if not cleaned_text:
+                    continue
 
             response_text = ""
 
             if state["step"] == "await_start":
                 if is_positive(cleaned_text):
-                    response_text = "음성 주문을 시작합니다. 어떤 메뉴를 원하세요?"
-                    await websocket.send("goto_menu")
-                    synthesize_speech(response_text)
-                    state["step"] = "await_menu"
-                    state["first_order_done"] = True
-                    state["gpt_messages"] = [] 
+                    await websocket.send("goto_menu")  # 🚀 먼저 페이지 이동
+                    await asyncio.sleep(0.5)  # 💡 클라이언트 로딩 대기 (필요시 늘릴 수 있음)
+
+                    # 이후 서버가 다시 응답하도록 상태 설정만
+                    state["step"] = "announce_menu_prompt"
                     continue
+
+
+
                 elif is_negative(cleaned_text):
                     response_text = "일반 키오스크로 주문을 진행해주세요."
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket, activate_mic=False)
+
+
                     client_states.pop(websocket)
                     return
 
             elif state["step"] == "await_menu":
                 menu_items = await sync_to_async(list)(MenuItem.objects.all())
 
-                def match_menu(text):
-                    text_clean = text.replace(" ", "").lower()
-                    best_match = None
-                    best_score = 0.0
-                    for item in menu_items:
-                        name_clean = item.name.replace(" ", "").lower()
-                        ratio = difflib.SequenceMatcher(None, name_clean, text_clean).ratio()
-                        if ratio > best_score:
-                            best_match = item
-                            best_score = ratio
-                    return best_match, best_score
+                cleaned_user_text = cleaned_text.replace(" ", "").lower()
+
+
+                matched_item = next(
+                    (item for item in menu_items if item.name.replace(" ", "").lower() in cleaned_user_text),
+                    None
+                )
+
 
 
                 def is_order_expression(text):
@@ -468,22 +530,23 @@ async def echo(websocket):
                     
                     
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                     continue
 
 
-                matched_item, match_score = match_menu(cleaned_user_text)
                 has_clear_order = is_order_expression(cleaned_user_text)
 
 
                 # "아메리카노" 같이 메뉴 단독 발화인 경우 허용
-                is_exact_menu = matched_item and cleaned_user_text == matched_item.name.replace(" ", "").lower()
+                is_exact_menu = matched_item and matched_item.name.replace(" ", "").lower() == cleaned_user_text
 
+                has_clear_order = is_order_expression(cleaned_user_text)
                 print("🧪 유사도 기반 매칭:", matched_item.name if matched_item else None)
                 print("📌 주문 표현:", has_clear_order, "| 정확 메뉴:", is_exact_menu)
 
 
-                if matched_item and (has_clear_order or is_exact_menu or match_score > 0.6):
+                if matched_item and (has_clear_order or is_exact_menu):
                     item = matched_item
                     state.update({
                         "menu": item.name,
@@ -498,12 +561,17 @@ async def echo(websocket):
                     else:
                         response_text = f"{item.name} {state['price']}원입니다. 옵션 선택을 진행할까요?"
                         state["step"] = "confirm_options"
+                        await websocket.send("mic_off")            # 🔇 먼저 마이크 끄기
+                        await websocket.send(response_text)         # 📩 텍스트 응답 보내기
+                        await synthesize_speech(response_text, websocket, activate_mic=True)  # 🔊 실제 TTS + 띵 → mic_on
                 else:
                     # GPT로 질문 위임
                     gpt_reply = await get_chatgpt_response(text, state["gpt_messages"])
+                    await websocket.send("mic_off")  # 🎤 응답 전에 먼저 마이크 끔
                     await websocket.send(gpt_reply)
-                    synthesize_speech(gpt_reply)
-                    continue
+                    await synthesize_speech(gpt_reply, websocket)  # 🔊 응답 말하고 띵 → 마이크 켜짐
+
+
 
 
             elif state["step"] == "confirm_repeat_options":
@@ -528,6 +596,7 @@ async def echo(websocket):
                                 "price": item["price"]
                             })
                             response_text = f"{item['name']}을 담았습니다. 추가로 주문하시겠습니까?"
+
                         else:
                             # ✅ 그 외는 기존 옵션 복사
                             state["cart"].append({
@@ -584,8 +653,10 @@ async def echo(websocket):
                 else:
                     # 유효하지 않은 응답이거나 시스템 질문 포함된 채 인식됨 → 재질문
                     response_text = "같은 옵션으로 주문할까요? 네 또는 아니요로 말씀해주세요."
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                     continue
 
 
@@ -594,6 +665,10 @@ async def echo(websocket):
                 if is_positive(cleaned_text):
                     response_text = "보통 또는 큰 사이즈 둘 중 하나를 선택해주세요. 큰 사이즈는 500원이 추가됩니다."
                     state["step"] = "choose_size"
+                    await websocket.send("mic_off")  # 🔇 먼저 끄고
+                    await websocket.send(response_text)  # 💬 텍스트 응답
+                    await synthesize_speech(response_text, websocket, activate_mic=True)  # 🔊 출력 + 지연 마이크 ON
+                    continue  # ✅ 빠져나가기
                 elif is_negative(cleaned_text):
                     category = state["category"]
                     if category in ["커피", "음료"]:
@@ -628,8 +703,10 @@ async def echo(websocket):
                     response_text = "핫 또는 아이스를 선택해주세요."
                     state["step"] = "choose_temp"
                     state["last_question"] = response_text 
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                     continue  
 
             elif state["step"] == "choose_temp":
@@ -651,8 +728,10 @@ async def echo(websocket):
                     response_text = "샷 추가하시겠습니까?"
                     state["step"] = "ask_shot"
                     state["last_question"] = response_text  # ❗️이거 추가
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                     continue
 
 
@@ -669,8 +748,10 @@ async def echo(websocket):
                     state["step"] = "choose_shot"
                     state["last_question"] = response_text  # 추가
                     print("✅ 샷 추가 긍정 응답 → choose_shot로 전환")
+                    await websocket.send("mic_off")
                     await websocket.send(response_text)
-                    synthesize_speech(response_text)
+                    await synthesize_speech(response_text, websocket)
+
                     continue
 
                 
@@ -745,11 +826,11 @@ async def echo(websocket):
 
 
                     await websocket.send(summary)
-                    synthesize_speech(summary)
+                    await synthesize_speech(summary, websocket, activate_mic=False)  # 마이크 off
                     await asyncio.sleep(5)
                     final_msg = "결제가 완료되었습니다. 감사합니다."
                     await websocket.send(final_msg)
-                    synthesize_speech(final_msg)
+                    await synthesize_speech(final_msg, websocket, activate_mic=False)  # 마이크 off
 
                     await asyncio.sleep(2)
                     await websocket.send("goto_start")
@@ -774,18 +855,21 @@ async def echo(websocket):
 
                 # ✅ 여기서 공통 응답 처리
                 state["last_question"] = response_text
+                await websocket.send("mic_off")
                 await websocket.send(response_text)
-                synthesize_speech(response_text)
+                await synthesize_speech(response_text, websocket)
+
                 continue
 
 
-            else:
-                response_text = "죄송합니다. 다시 말씀해주세요."
+            
 
-            if response_text:
+            if response_text and state["step"] not in ["confirm_options"]:
                 state["last_question"] = response_text
                 await websocket.send(response_text)
-                synthesize_speech(response_text)
+                await synthesize_speech(response_text, websocket)
+
+
 
     except websockets.ConnectionClosed:
         print("❌ 클라이언트 연결 종료")
@@ -801,3 +885,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+

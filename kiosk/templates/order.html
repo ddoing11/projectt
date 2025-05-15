@@ -4,14 +4,34 @@
 <head>
   <meta charset="UTF-8">
   <title>메뉴 주문</title>
-
   <script src="{% static 'js/voice_socket_main.js' %}"></script>
-
 </head>
 <body>
   <h1>📝 주문 페이지</h1>
   <div id="menu-list">
     <!-- 메뉴 목록이 여기에 출력됨 -->
   </div>
+
+  <script>
+    // ✅ 페이지 로딩 완료 후 서버에 상태 복원 요청
+    document.addEventListener("DOMContentLoaded", () => {
+      if (localStorage.getItem("continueRecognition") === "true") {
+        localStorage.removeItem("continueRecognition");
+        console.log("🔁 order 진입 후 서버에 상태 요청");
+        if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+          socket.send("resume_from_menu");
+        } else {
+          // WebSocket이 아직 연결되지 않았을 경우 대기 후 전송
+          const retryInterval = setInterval(() => {
+            if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+              socket.send("resume_from_menu");
+              clearInterval(retryInterval);
+            }
+          }, 100);
+        }
+      }
+    });
+  </script>
+
 </body>
 </html>

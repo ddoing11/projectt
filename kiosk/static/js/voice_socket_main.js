@@ -15,7 +15,7 @@ function createWebSocket() {
       localStorage.removeItem("continueRecognition");
       console.log("🔁 페이지 전환 후 자동 음성 인식 재시작");
       socket.send("resume_from_menu"); // ✅ 서버에 상태 복원 요청만 먼저 전송
-      startRecognition();
+
     }
   };
 
@@ -23,17 +23,44 @@ function createWebSocket() {
     const text = event.data.trim();
     console.log('📩 서버 응답:', text);
 
-    // ✅ resume_from_menu 이후의 첫 응답에서 음성인식 시작
-    if (!resumeHandled && (
-      text.includes("다시 메뉴를 말씀해주세요") ||
-      text.includes("옵션 선택을 진행할까요") ||
-      text.includes("장바구니에 담았습니다")
-    )) {
-      resumeHandled = true;
-      console.log("🎤 서버 응답 후 음성 인식 시작");
-      startRecognition();
+    // ✅ 마이크 제어 명령
+    if (text === "mic_off") {
+      console.log("🔇 서버 지시: 마이크 OFF");
+      if (recognition) {
+        try {
+          recognizing = false;  // ✅ 마이크 상태 먼저 false로 명확히
+          recognition.stop();   // ✅ try-catch로 감싸서 안정성 보장
+        } catch (error) {
+          console.error("❌ recognition.stop() 오류:", error);
+        }
+      }
       return;
     }
+
+
+    if (text === "mic_on") {
+      console.log("🔊 서버 지시: 마이크 ON");
+
+      // 마이크 완전히 종료 후 재시작
+      if (recognition && recognizing) {
+        try {
+          recognition.abort();
+        } catch (e) {
+          console.warn("⚠️ abort 중 오류:", e);
+        }
+        recognizing = false;
+      }
+
+      setTimeout(() => {
+        startRecognition();  // 약간의 텀 두고 시작
+      }, 100);  // 필요 시 50~150ms 사이로 조절 가능
+
+      return;
+    }
+
+
+
+
 
     // 🎯 페이지 이동 명령 처리
     if (text === "goto_menu") {
@@ -42,6 +69,7 @@ function createWebSocket() {
       window.location.href = "/order";
       return;
     }
+
 
     if (text === "goto_start") {
       console.log("📢 서버 지시: /start 페이지로 이동");
@@ -56,20 +84,11 @@ function createWebSocket() {
       window.location.href = "/start";
       return;
     }
-    
-
-
-    // 🎯 음성 안내 멘트 이후 마이크 계속 켜기
-    if (
-      /음성.*주문.*시겠습니까/.test(text) ||
-      /음성 주문.*시작합니다/.test(text) ||
-      /더 추가할 메뉴/.test(text) ||
-      /메뉴.*말씀/.test(text)
-    ) {
-      console.log("🎤 음성인식 시작 조건 충족됨 → startRecognition 호출");
-      startRecognition();
-    }
   };
+
+
+
+
 
   socket.onclose = () => {
     console.warn("⚠️ WebSocket 연결 종료");
@@ -103,12 +122,25 @@ function startRecognition() {
 
     let cleanText = result.replace(/\s/g, '').toLowerCase();
 
-    ["음성으로주문하시겠습니까", "음성주문을시작합니다", "어떤메뉴를원하세요"].forEach(phrase => {
-      if (cleanText.startsWith(phrase)) {
-        cleanText = cleanText.slice(phrase.length);
-      }
-    });
+    // 📛 시스템 음성 문장 무시
+    const phrasesToIgnore = [
+      "음성으로주문하시겠습니까",
+      "음성주문을시작합니다",
+      "어떤메뉴를원하세요",
+      "옵션선택을진행할까요",
+      "아메리카노2000원입니다옵션선택을진행할까요"
+    ];
 
+    const shouldIgnore = phrasesToIgnore.some(p =>
+      cleanText.startsWith(p)
+    );
+
+    if (shouldIgnore) {
+      console.log("⏭️ 안내 문장은 전송 생략됨");
+      return;
+    }
+
+    // 🟢 긍정 응답일 경우 바로 전송
     const positives = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ"];
     if (positives.includes(cleanText)) {
       console.log("✅ 긍정 응답 → 서버로 전송");
@@ -118,19 +150,7 @@ function startRecognition() {
       return;
     }
 
-    const phrasesToIgnore = [
-      "음성으로 주문하시겠습니까",
-      "음성 주문을 시작합니다",
-      "어떤 메뉴를 원하세요"
-    ];
-    const shouldIgnore = phrasesToIgnore.some(p =>
-      cleanText.includes(p.replace(/\s/g, '').toLowerCase())
-    );
-    if (shouldIgnore) {
-      console.log("⏭️ 안내 문장은 전송 생략됨");
-      return;
-    }
-
+    // 🛰 서버로 텍스트 전송
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send(result);
     }
@@ -141,16 +161,16 @@ function startRecognition() {
   };
 
   recognition.onend = () => {
-    console.warn("🛑 음성 인식 종료됨 → 재시작 시도");
-    if (recognizing) {
-      recognition.start();
-    }
+    console.warn("🛑 음성 인식 종료됨");
+    recognizing = false;
+    console.log("🔇 마이크 꺼진 상태, 재시작 안함");
   };
 
   recognition.start();
   recognizing = true;
   console.log("🎤 음성 인식 시작");
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
   window.speechSynthesis.cancel();
