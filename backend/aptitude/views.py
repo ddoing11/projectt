@@ -4,6 +4,7 @@ from kiosk.models import MenuItem
 import json
 from django.views.decorators.csrf import csrf_exempt
 import openai
+from django.views.decorators.clickjacking import xframe_options_exempt
 
 # ChatGPT 설정 (API 키는 settings에 보관하는 것이 좋음)
 openai.api_key = "YOUR_OPENAI_API_KEY"
@@ -19,7 +20,8 @@ def order_start_voice(request):
 # --- 주문 화면 ---
 def order(request):
     return render(request, 'order.html')
-
+def menu_coffee(request):
+    return render(request, 'menu_coffee.html')
 # --- 음성 인식 결과 처리 ---
 @csrf_exempt
 def process_response(request):
@@ -114,3 +116,27 @@ def chatgpt_order(request):
 # --- 웹소켓 테스트용 ---
 def websocket_test(request):
     return render(request, 'kiosk/websocket_test.html')
+def menu_dessert(request):
+    return render(request, 'menu_dessert.html')   
+def menu_tea(request):
+    return render(request, 'menu_tea.html')
+def menu_drink(request):
+    return render(request, 'menu_drink.html')   
+def menu_drink_2(request):
+    return render(request, 'menu_drink_2.html') 
+def pay_all(request):
+    return render(request, 'pay_all.html')
+@xframe_options_exempt
+def popup_coffee(request):
+    return render(request, 'popup_coffee.html')
+@xframe_options_exempt
+def popup_drink(request):
+    return render(request, 'popup_drink.html')
+@xframe_options_exempt
+def popup_tea(request):
+    return render(request, 'popup_tea.html')
+@xframe_options_exempt
+def payment_final(request):
+    return render(request, 'payment_final.html')
+def done(request):
+    return render(request, 'done.html')
