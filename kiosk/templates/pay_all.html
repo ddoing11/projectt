@@ -1,0 +1,242 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1640, user-scalable=no" />
+  <title>결제하기</title>
+  <script src="{% static 'js/voice_socket_main.js' %}?v=버전"></script>
+
+  <style>
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
+    }
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: #fdfaf7;
+      font-family: 'Hakgyoansim', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 120px;
+      position: relative;
+      border-bottom: 2px solid #999;
+    }
+
+    .home-button {
+      position: absolute;
+      left: 80px;
+      top: 55%;
+      transform: translateY(-50%);
+      background-color: #eceae7;
+      border: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      font-family: 'BMDoHyeon', sans-serif;
+      color: rgba(0, 0, 0, 0.5);
+      opacity: 0.7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.2s;
+    }
+
+    .home-button:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+
+    .home-icon {
+      width: 60px;
+      height: 60px;
+    }
+
+    .title {
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'DalseoDarling', cursive;
+      position: absolute;
+      left: 50%;
+      top: 44%;
+      transform: translateX(-50%);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-around;
+      padding: 40px 80px;
+      border-bottom: 2px solid #999;
+      font-weight: bold;
+      font-size: 48px;
+    }
+
+    .table-content {
+      height: 1450px;
+      padding: 60px 80px 0;
+      font-size: 42px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .table-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .total-price {
+      display: flex;
+      align-items: center;
+      padding: 50px 80px;
+      padding-left: 400px;
+      border-top: 2px solid #999;
+      font-size: 60px;
+      font-weight: bold;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 100px;
+      margin-top: 50px;
+    }
+
+    .btn {
+      background-color: #5d3b1a;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 53px 132px;
+      font-size: 45px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1315px;
+      height: 1282px;
+      background: rgba(0,0,0,0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup-overlay iframe {
+      width: 1315px;
+      height: 1282px;
+      border: none;
+      border-radius: 20px;
+    }
+    button {
+      transition: all 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(1.10);
+    }
+    
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <button class="home-button" onclick="clearCartAndGoHome()">
+      <img src="{% static 'images/home_icon.png' %}" alt="Home" class="home-icon">
+      <span style="padding-top: 5px;">처음으로</span>
+    </button>
+    <div class="title">결제하기</div>
+  </div>
+
+  <div class="table-header">
+    <div>제품</div>
+    <div>수량</div>
+    <div>가격</div>
+  </div>
+
+  <div class="table-content" id="cart-items"></div>
+
+  <div class="total-price" id="total-price">
+    총 금액: 0원
+  </div>
+
+  <div class="buttons">
+    <button class="btn" onclick="history.back()">돌아가기</button>
+    <button class="btn" onclick="showPopup()">결제하기</button>
+  </div>
+
+  <div id="popup-overlay">
+    <iframe src="{% url 'payment_final' %}"></iframe>
+  </div>
+
+  <script>
+    function showPopup() {
+      document.getElementById('popup-overlay').style.display = 'flex';
+
+      const iframe = document.querySelector('#popup-overlay iframe');
+      iframe.contentWindow.postMessage('start-payment', '*');
+    }
+
+    function clearCartAndGoHome() {
+      localStorage.removeItem('cart');
+      location.href = "{% url 'start' %}";
+    }
+
+    function loadCartForPayment() {
+      const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
+      const cartItemsContainer = document.getElementById('cart-items');
+      const totalPriceElement = document.getElementById('total-price');
+
+      let total = 0;
+      cartData.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        const price = parseInt(item.basePrice) * parseInt(item.quantity);
+        total += price;
+        row.innerHTML = `
+          <div>${item.name}</div>
+          <div>${item.quantity}</div>
+          <div>${price.toLocaleString()}원</div>
+        `;
+        cartItemsContainer.appendChild(row);
+      });
+
+      totalPriceElement.innerHTML = `총 금액: ${total.toLocaleString()}원`;
+    }
+
+    window.onload = loadCartForPayment;
+  </script>
+
+</body>
+</html>
