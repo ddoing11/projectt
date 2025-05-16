@@ -8,6 +8,7 @@ import time
 from asgiref.sync import sync_to_async
 from difflib import SequenceMatcher
 from playsound import playsound
+import threading
 
 sound_path = "C:/SoundAssets/ding.wav"
 
@@ -67,33 +68,26 @@ def has_order_intent(text):
     return any(k in text for k in order_keywords)
     
 
-
+def play_ding(should_play=True):
+    if should_play:
+        playsound(sound_path)
 
 async def synthesize_speech(text, websocket=None, activate_mic=True):
     speech_config = SpeechConfig(subscription=AZURE_SPEECH_KEY, region=AZURE_SPEECH_REGION)
     audio_config = AudioOutputConfig(use_default_speaker=True)
     synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 
-
-
     result = synthesizer.speak_text_async(text).get()
 
     if result.reason == ResultReason.SynthesizingAudioCompleted:
-        playsound(sound_path)  # ✅ 띵 소리
+        # ✅ 띵 소리는 activate_mic이 True일 때만 재생
+        threading.Thread(target=play_ding, args=(activate_mic,)).start()
 
         if activate_mic and websocket:
-            # 📏 문장 길이 기반 마이크 ON 대기 시간 계산
-            length = len(text)
-            base_delay = 0.001   # 띵 소리 이후 기본 대기
-            speak_time = length  * 0.01  # 글자당 0.02초
-
-            delay = base_delay + speak_time
-            print(f"⏱️ 마이크 ON까지 대기: {delay:.2f}초 (문장 길이: {length}자)")
-            await asyncio.sleep(delay)
+            await asyncio.sleep(0.05)  # 🎤 0.05초 후 마이크 ON
             await websocket.send("mic_on")
 
     return result.reason == ResultReason.SynthesizingAudioCompleted
-
 
 
 
@@ -372,7 +366,7 @@ async def echo(websocket):
                 continue
 
             if text == "start_order":
-                response_text = "음성으로 주문하시겠습니까?"
+                
                 state.update({
                     "step": "await_start",
                     "cart": [],
@@ -383,10 +377,23 @@ async def echo(websocket):
                     "price": 0,
                     "category": None
                 })
-                await websocket.send(response_text)
-                await synthesize_speech(response_text, websocket)
+                # ✅ 위의 3단계 코드 삽입
+                await websocket.send("mic_off")
+                await synthesize_speech("음성으로 주문하시겠습니까?", websocket, activate_mic=False)
+                threading.Thread(target=play_ding).start()
+                await asyncio.sleep(0.1)
+                await synthesize_speech("소리 이후에 말씀해주세요.", websocket, activate_mic=False)
+                
+                # 4. 약간 쉬었다가 (사용자 준비 시간 줌)
+                await asyncio.sleep(0.2)
 
+                # 5. 띵 소리 2 (→ 마이크 ON 유도)
+                threading.Thread(target=play_ding).start()
+                await asyncio.sleep(0.05)
+                await websocket.send("mic_on")
+                
                 continue
+
 
 
             

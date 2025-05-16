@@ -181,5 +181,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send("start_order");
     }
-  }, { once: true });
+  });
 });
