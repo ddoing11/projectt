@@ -2,26 +2,400 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1640, user-scalable=no" />
   <title>메뉴 주문</title>
   <script src="{% static 'js/voice_socket_main.js' %}"></script>
+  <style>
+    @font-face {
+      font-family: 'Hakgyoansim';
+      src: url('{% static 'fonts/Hakgyoansim.ttf' %}') format('truetype');
+    }
+    @font-face {
+      font-family: 'BMDoHyeon';
+      src: url('{% static 'fonts/BMDoHyeon.ttf' %}') format('truetype');
+    }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1640px;
+      height: 2360px;
+      background-color: #fdfaf7;
+      font-family: 'Hakgyoansim', sans-serif;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 80px 20px;
+      border-bottom: 2px solid #999;
+    }
+
+    .top-bar-title {
+      font-size: 60px;
+      font-weight: bold;
+      font-family: 'DalseoDarling', cursive;
+    }
+
+    .home-button {
+      background-color: #eceae7;
+      border: none;
+      padding: 20px 40px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .home-button img {
+      width: 60px;
+      height: 60px;
+    }
+
+    .home-button span {
+      font-size: 48px;
+      font-family: 'BMDoHyeon', sans-serif;
+      opacity: 0.7;
+    }
+
+    .tab-menu {
+      display: flex;
+      justify-content: space-between;
+      padding: 30px 80px;
+      margin: 20px 0 40px;
+      border-bottom: 2px solid #999;
+    }
+
+    .tab-menu button {
+      flex: 1;
+      margin: 0 10px;
+      padding: 30px 0;
+      font-size: 36px;
+      font-weight: bold;
+      background-color: #f1f1f1;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-family: 'BMDoHyeon', sans-serif;
+      cursor: pointer;
+    }
+
+    .tab-menu .active {
+      background-color: #ffe08c;
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .arrow-right {
+      position: absolute;
+      top: 600px;            /* 딱 카드 중앙 높이 맞춤 */
+      right: 0px;            /* 오른쪽 끝에서 조금 띄움 */
+      width: 150px;            /* 이미지 크기 */
+      height: auto;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    
+ 
+
+    .menu-tab {
+      display: none;
+      position: relative; 
+    }
+    .menu-tab.active {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 55px 100px 0;
+    }
+
+    .menu-item {
+      text-align: center;
+      border: 2px solid #ccc;
+      padding: 30px;
+      background: white;
+    }
+
+    .menu-item img {
+      height: 400px;
+    }
+
+    .menu-item .name {
+      margin-top: 30px;
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .menu-item .price {
+      font-size: 42px;
+      color: #3300cc;
+      margin-top: 15px;
+    }
+
+    .bottom-box {
+      margin: 55px 100px;
+      padding: 30px;
+      background: #fff;
+      border: 2px solid #ddd;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bottom-box .title {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .middle-line {
+      width: 800px;
+      height: 2px;
+      background-color: #ccc;
+      margin: 10px 0 20px 0;
+    }
+
+    .cart-lineup {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .cart-items {
+      display: flex;
+      gap: 30px;
+      overflow-x: auto;
+      width: 75%;
+      padding-top: 10px;
+    }
+
+    .cart-item {
+      min-width: 240px;
+      border-right: 2px solid #ccc;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .cart-item img {
+      height: 120px;
+    }
+
+    .pay-button {
+      background: #5c4033;
+      color: white;
+      font-size: 36px;
+      padding: 100px 40px;
+      border-radius: 10px;
+      font-family: 'Hakgyoansim', sans-serif;
+      margin-left: 30px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .pay-button:hover {
+      background-color: #4a2f14;
+      transform: scale(1.05);
+    }
+
+    #popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #popup-overlay iframe {
+      width: 1315px;
+      height: 1282px;
+      border: none;
+      border-radius: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>📝 주문 페이지</h1>
-  <div id="menu-list">
-    <!-- 메뉴 목록이 여기에 출력됨 -->
+  <div class="top-bar">
+    <button class="home-button" onclick="location.href='start.html'">
+      <img src="{% static 'images/home_icon.png' %}" alt="처음으로">
+      <span>처음으로</span>
+    </button>
+    <div class="top-bar-title">메뉴</div>
+    <div></div>
+  </div>
+
+  <div class="tab-menu">
+    <button class="active" onclick="showTab('coffee', this)">커피</button>
+    <button onclick="showTab('drink', this)">음료</button>
+    <button onclick="showTab('tea', this)">차</button>
+    <button onclick="showTab('dessert', this)">디저트</button>
+  </div>
+
+  <div id="tab-coffee" class="menu-tab active">
+    <div class="menu-item">
+      <img src="{% static 'images/americano.png' %}" alt="아메리카노" />
+      <div class="name">아메리카노</div>
+      <div class="price">2000원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/latte.png' %}" alt="카페 라떼" />
+      <div class="name">카페 라떼</div>
+      <div class="price">2500원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/toffee.png' %}" alt="토피넛 라떼" />
+      <div class="name">토피넛 라떼</div>
+      <div class="price">4800원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/dalcona.png' %}" alt="달고나 라떼" />
+      <div class="name">달고나 라떼</div>
+      <div class="price">4800원</div>
+    </div>
+    
+  </div>
+
+  <div id="tab-drink" class="menu-tab">
+    <div class="menu-item">
+      <img src="{% static 'images/초코라떼.png' %}" alt="초코라떼">
+      <div class="name">초코 라떼</div>
+      <div class="price">5200원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/녹차라떼.png' %}" alt="녹차라떼">
+      <div class="name">녹차 라떼</div>
+      <div class="price">5200원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/딸기라떼.png' %}" alt="딸기라떼">
+      <div class="name">딸기 라떼</div>
+      <div class="price">5400원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/요거트스무디.png' %}" alt="요거트스무디">
+      <div class="name">요거트 스무디</div>
+      <div class="price">5500원</div>
+    </div>
+    <img class="arrow-right" src="{% static 'images/arrow_right.png' %}" alt="다음" onclick="showTab('drink2', this)" />
+  </div>
+</div>
+
+
+<div id="tab-drink2" class="menu-tab">
+  <div class="menu-item">
+    <img src="{% static 'images/아이스티 (1).png' %}" alt="아이스티">
+    <div class="name">아이스티</div>
+    <div class="price">3800원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/아샷추 (1).png' %}" alt="아샷추">
+    <div class="name">아샷추</div>
+    <div class="price">4200원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/레몬에이드 (1).png' %}" alt="레몬 에이드">
+    <div class="name">레몬 에이드</div>
+    <div class="price">4200원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/자몽에이드 (1).png' %}" alt="자몽 에이드">
+    <div class="name">자몽 에이드</div>
+    <div class="price">4200원</div>
+  </div>
+
+  <!-- 왼쪽 화살표로 이전 탭(drink)으로 이동 -->
+  <img class="arrow-right" style="left: 0; right: auto; transform: rotate(180deg);" src="{% static 'images/arrow_right.png' %}" alt="이전" onclick="showTab('drink', this)" />
+</div>
+
+
+
+  <div id="tab-tea" class="menu-tab">
+    <div class="menu-item">
+      <img src="{% static 'images/히비스커스.png' %}" alt="히비스커스" />
+      <div class="name">히비스커스</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/캐모마일.png' %}" alt="캐모마일" />
+      <div class="name">캐모마일</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/루이보스.png' %}" alt="루이보스" />
+      <div class="name">루이보스</div>
+      <div class="price">4500원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/얼그레이.png' %}" alt="얼그레이" />
+      <div class="name">얼그레이</div>
+      <div class="price">4500원</div>
+    </div>
+  </div>
+
+
+  <div id="tab-dessert" class="menu-tab">
+    <div class="menu-item">
+      <img src="{% static 'images/베이글.png' %}" alt="베이글">
+      <div class="name">베이글</div>
+      <div class="price">3800원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/카스테라.png' %}" alt="카스테라">
+      <div class="name">카스테라</div>
+      <div class="price">4200원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/딸기케이크.png' %}" alt="딸기 케이크">
+      <div class="name">딸기 케이크</div>
+      <div class="price">5400원</div>
+    </div>
+    <div class="menu-item">
+      <img src="{% static 'images/초코케이크.png' %}" alt="초코 케이크">
+      <div class="name">초코 케이크</div>
+      <div class="price">5400원</div>
+    </div>
+  </div>
+
+
+  <div class="bottom-box">
+    <div class="title">선택한 메뉴</div>
+    <div class="middle-line"></div>
+    <div class="cart-lineup">
+      <div class="cart-items"></div>
+      <button class="pay-button">결제하기</button>
+    </div>
+  </div>
+
+  <div id="popup-overlay">
+    <iframe id="popup-frame"></iframe> <!-- ✅ src는 자바스크립트로 설정 -->
   </div>
 
   <script>
-    // ✅ 페이지 로딩 완료 후 서버에 상태 복원 요청
+    function showTab(category, button) {
+      document.querySelectorAll('.menu-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelector(`#tab-${category}`).classList.add('active');
+      document.querySelectorAll('.tab-menu button').forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      // 음성 인식 상태 복구
       if (localStorage.getItem("continueRecognition") === "true") {
         localStorage.removeItem("continueRecognition");
         console.log("🔁 order 진입 후 서버에 상태 요청");
         if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
           socket.send("resume_from_menu");
         } else {
-          // WebSocket이 아직 연결되지 않았을 경우 대기 후 전송
           const retryInterval = setInterval(() => {
             if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
               socket.send("resume_from_menu");
@@ -30,7 +404,144 @@
           }, 100);
         }
       }
+
+      // ☕ 커피 메뉴 → 옵션 팝업 띄움
+      document.querySelectorAll('#tab-coffee .menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const name = item.querySelector('.name').innerText;
+          const priceText = item.querySelector('.price').innerText;
+          const price = parseInt(priceText.replace('원', ''));
+
+          const popup = document.getElementById('popup-overlay');
+          const frame = document.getElementById('popup-frame');
+          frame.src = "/popup/popup_coffee/";
+          popup.style.display = 'flex';
+
+          localStorage.setItem('selectedMenu', name);
+          localStorage.setItem('selectedPrice', price);
+        });
+      });
+
+      // 🥤 음료 메뉴 → 옵션 팝업 띄움
+      document.querySelectorAll('#tab-drink .menu-item, #tab-drink2 .menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const name = item.querySelector('.name').innerText;
+          const priceText = item.querySelector('.price').innerText;
+          const price = parseInt(priceText.replace('원', ''));
+
+          const popup = document.getElementById('popup-overlay');
+          const frame = document.getElementById('popup-frame');
+          frame.src = "/popup/popup_drink/";  // 음료용 팝업 주소
+          popup.style.display = 'flex';
+
+          localStorage.setItem('selectedMenu', name);
+          localStorage.setItem('selectedPrice', price);
+        });
+      });
+
+      // 🍵 차 메뉴 → 옵션 팝업 띄움
+      document.querySelectorAll('#tab-tea .menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const name = item.querySelector('.name').innerText;
+          const priceText = item.querySelector('.price').innerText;
+          const price = parseInt(priceText.replace('원', ''));
+
+          // 팝업 프레임과 오버레이 열기
+          const popup = document.getElementById('popup-overlay');
+          const frame = document.getElementById('popup-frame');
+          frame.src = "/popup/popup_tea/";  // ✅ 차 옵션 페이지 주소
+          popup.style.display = 'flex';
+
+          // localStorage에 선택한 메뉴 저장
+          localStorage.setItem('selectedMenu', name);
+          localStorage.setItem('selectedPrice', price);
+          localStorage.setItem('selectedCategory', 'tea');  // 구분용
+        });
+      });
+
+
+      
+      
+
+
+    document.querySelectorAll('#tab-drink .menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const name = item.querySelector('.name').innerText;
+        const priceText = item.querySelector('.price').innerText;
+        const price = parseInt(priceText.replace('원', ''));
+
+        const popup = document.getElementById('popup-overlay');
+        const frame = document.getElementById('popup-frame');
+        frame.src = "/popup/popup_drink/";
+        popup.style.display = 'flex';
+
+        localStorage.setItem('selectedMenu', name);
+        localStorage.setItem('selectedPrice', price);
+      });
     });
+
+    // 🍰 디저트 메뉴 → 옵션 없이 바로 장바구니 추가
+    document.querySelectorAll('#tab-dessert .menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const name = item.querySelector('.name').innerText;
+        const priceText = item.querySelector('.price').innerText;
+        const price = parseInt(priceText.replace('원', ''));
+
+        addToCart(name, price);
+      });
+    });
+
+    window.addToCartWithOptions = function(name, basePrice, selections) {
+      let extraPrice = 0;
+
+      if (selections.size.includes("크게")) extraPrice += 500;
+      if (selections.shot.includes("1번")) extraPrice += 300;
+      else if (selections.shot.includes("2번")) extraPrice += 600;
+
+      const totalPrice = basePrice + extraPrice;
+
+      const cartItems = document.querySelector(".cart-items");
+      const newItem = document.createElement("div");
+      newItem.classList.add("cart-item");
+
+      // ✅ static 경로를 문자열로 만든 다음 JS에서 이미지 경로 붙이기
+      const staticPath = "{% static 'images/' %}";
+      const filename = name.replace(/\s/g, "") + ".png"; // 공백 제거
+      const imagePath = staticPath + filename;
+
+      newItem.innerHTML = `
+        <img src="${imagePath}" alt="${name}">
+        <div style="font-size: 34px;">${name}</div>
+        <div style="font-size: 28px;">
+          ${selections.size}, ${selections.temp}, ${selections.shot}
+        </div>
+        <div><span style="font-size: 34px;">${totalPrice}원</span></div>
+      `;
+      cartItems.appendChild(newItem);
+
+      // ✅ 팝업 닫기
+      document.getElementById("popup-overlay").style.display = "none";
+    };
+
+
+
+
+
+    // ✅ 장바구니에 추가
+    function addToCart(name, price) {
+      const cartItems = document.querySelector(".cart-items");
+      const newItem = document.createElement("div");
+      newItem.classList.add("cart-item");
+      newItem.innerHTML = `
+        <img src="/static/images/${name}.png" alt="${name}">
+        <div><span style="font-size: 34px;">${price}원</span></div>
+      `;
+      cartItems.appendChild(newItem);
+    }
+
+
+    });
+
   </script>
 
 </body>

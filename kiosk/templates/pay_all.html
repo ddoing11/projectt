@@ -1,3 +1,6 @@
+{% load static %}
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,11 +10,11 @@
   <style>
     @font-face {
       font-family: 'BMDoHyeon';
-      src: url('./fonts/BMDoHyeon.ttf') format('truetype');
+      src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
     }
     @font-face {
       font-family: 'Hakgyoansim';
-      src: url('./fonts/Hakgyoansim.ttf') format('truetype');
+      src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
     }
     @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
 
@@ -145,13 +148,16 @@
       border-radius: 20px;
     }
   </style>
+  <!-- pay_all.html 하단에 추가 -->
+  <script src="{% static 'js/voice_socket_main.js' %}"></script>
+
 </head>
 
 <body>
 
   <div class="top-bar">
     <button class="home-button" onclick="location.href='start.html'">
-      <img src="./images/home_icon.png" alt="Home" class="home-icon">
+      <img src="{% static 'images/home_icon.png' %}" alt="Home" class="home-icon">
       <span style="padding-top: 5px;">처음으로</span>
     </button>
     <div class="title">결제하기</div>
@@ -177,15 +183,100 @@
   </div>
 
   <!-- 팝업 오버레이 -->
-  <div id="popup-overlay">
-    <iframe src="payment_final.html"></iframe>
+  <!-- pay_all.html의 하단에 추가 -->
+  <div id="popup-overlay" style="display: none; justify-content: center; align-items: center;">
+
+
+    <div class="popup">
+      <h1>결제</h1>
+      <hr />
+      <div class="symbol">₩</div>
+      <hr />
+      <div class="text">
+        결제 중입니다.<br>
+        잠시만 기다려 주세요.
+      </div>
+    </div>
   </div>
+
+  <style>
+    .popup {
+      background: white;
+      width: 1315px;
+      height: 1282px;
+      border-radius: 20px;
+      padding: 80px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+
+    .popup h1 {
+      font-size: 60px;
+      font-family: 'BMDoHyeon', sans-serif;
+      margin-bottom: 40px;
+    }
+
+    .popup hr {
+      width: 100%;
+      border: none;
+      border-top: 1px solid #999;
+      margin: 30px 0;
+    }
+
+    .popup .symbol {
+      font-size: 120px;
+      align-self: flex-start;
+      padding-left: 200px;
+      margin: 20px 0;
+    }
+
+    .popup .text {
+      font-size: 48px;
+      text-align: center;
+      margin-top: 180px;
+      font-family: 'BMDoHyeon', sans-serif;
+      line-height: 2.5;
+    }
+  </style>
+
+  </div>
+
+
 
   <script>
     function showPopup() {
       document.getElementById('popup-overlay').style.display = 'flex';
     }
-  </script>
+
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("✅ DOMContentLoaded 실행됨");
+
+      // socket이 없거나 닫혀 있다면 createWebSocket() 호출
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        createWebSocket();  // 외부 JS에서 정의된 함수여야 함
+      }
+
+      // 연결 후 서버에 결제 페이지 준비 완료 알림
+      const waitForSocket = setInterval(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          console.log("✅ WebSocket 재연결 완료");
+
+          socket.send("pay_all_ready");  // ✅ 결제 상태 준비 알림
+          socket.send("read_cart");      // ✅ 장바구니 읽기 요청 추가
+          clearInterval(waitForSocket);
+        }
+      }, 100);  // 100ms 간격으로 연결 상태 확인
+    });
+
+    </script>
+  
 
 </body>
 </html>

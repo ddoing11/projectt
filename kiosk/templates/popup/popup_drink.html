@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>차 옵션 선택</title>
+  <meta charset="UTF-8" />
+  <title>옵션 선택</title>
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
@@ -16,58 +15,56 @@
 
     body {
       margin: 0;
+      width: 1640px;
+      height: 2360px;
       background-color: rgba(0, 0, 0, 0.4);
       font-family: 'Hakgyoansim', sans-serif;
-      width: 100vw;
-      height: 100vh;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
     }
 
     .popup {
-      width: 700px;
-      background-color: white;
-      border-radius: 12px;
-      padding: 50px 60px;
+      background: white;
+      width: 1315px;
+      height: 1282px;
+      border-radius: 20px;
+      padding: 80px;
       box-sizing: border-box;
+      font-family: 'BMDoHyeon', sans-serif;
     }
 
     .popup h2 {
+      font-size: 52px;
       text-align: center;
-      font-size: 36px;
-      font-family: 'BMDoHyeon', sans-serif;
-      margin-bottom: 20px;
+      margin-bottom: 40px;
+      font-weight: bold;
     }
 
     .divider {
       height: 2px;
       background-color: #999;
+      margin: 40px 0;
+    }
+
+    h3 {
+      font-size: 42px;
       margin: 20px 0;
-    }
-
-    .section {
-      margin-bottom: 30px;
-    }
-
-    .section-title {
-      font-size: 28px;
-      font-family: 'BMDoHyeon', sans-serif;
-      margin-bottom: 10px;
     }
 
     .option-group {
       display: flex;
-      gap: 20px;
+      gap: 40px;
+      margin-bottom: 40px;
     }
 
     .option-button {
       font-family: 'Hakgyoansim', sans-serif;
-      font-size: 24px;
-      padding: 12px 24px;
+      font-size: 36px;
+      padding: 20px 40px;
       border: 2px solid #5c4033;
-      border-radius: 8px;
-      background-color: white;
+      border-radius: 10px;
+      background: white;
       color: #000;
       cursor: pointer;
     }
@@ -86,43 +83,63 @@
     }
 
     .complete-button {
-      font-family: 'Hakgyoansim', sans-serif;
-      font-size: 28px;
-      background-color: #5c4033;
-      color: white;
-      border: none;
-      padding: 20px 60px;
-      border-radius: 30px;
       display: block;
-      margin: 50px auto 0;
+      font-family: 'Hakgyoansim', sans-serif;
+      font-size: 40px;
+      margin: 60px auto 0;
+      background: #5c4033;
+      color: white;
+      padding: 30px 100px;
+      border-radius: 50px;
       cursor: pointer;
+      border: none;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
     }
   </style>
 </head>
 <body>
-  <div class="popup">
-    <h2>옵션 선택</h2>
-    <div class="divider"></div>
+  <div class="overlay">
+    <div class="popup">
+      <h2>옵션 선택</h2>
+      <div class="divider"></div>
 
-    <div class="section">
-      <div class="section-title">사이즈 선택</div>
+      <h3>사이즈 선택</h3>
       <div class="option-group" id="size-options">
         <button class="option-button" data-group="size">보통</button>
         <button class="option-button" data-group="size">크게 (+ 500원)</button>
       </div>
-    </div>
 
-    <div class="divider"></div>
+      <div class="divider"></div>
 
-    <div class="section">
-      <div class="section-title">핫/아이스 선택</div>
+      <h3>핫/아이스 선택</h3>
       <div class="option-group" id="hotice-options">
         <button class="option-button hot" data-group="hotice">핫</button>
         <button class="option-button ice" data-group="hotice">아이스</button>
       </div>
-    </div>
 
-    <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+      <div class="divider"></div>
+
+      <h3>샷 추가</h3>
+      <div class="option-group" id="shot-options">
+        <button class="option-button" data-group="shot">안 함</button>
+        <button class="option-button" data-group="shot">1번 (+ 300원)</button>
+        <button class="option-button" data-group="shot">2번 (+ 600원)</button>
+      </div>
+
+      <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+    </div>
   </div>
 
   <script>
@@ -139,15 +156,33 @@
     function completeSelection() {
       const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
       const hotice = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
+      const shot = document.querySelector(".option-button[data-group='shot'].selected")?.innerText;
 
-      if (!size || !hotice) {
+      if (!size || !hotice || !shot) {
         alert("모든 옵션을 선택해 주세요.");
         return;
       }
 
-      alert("장바구니에 담겼습니다.");
-      document.querySelector(".popup").remove();
+      const name = localStorage.getItem("selectedMenu");
+      const price = parseInt(localStorage.getItem("selectedPrice"));
+
+      const selections = {
+        size: size,
+        temp: hotice,
+        shot: shot,
+      };
+
+      window.parent.addToCartWithOptions(name, price, selections);
+
+      // 팝업 닫기
+      if (window.parent) {
+        const overlay = window.parent.document.getElementById("popup-overlay");
+        if (overlay) {
+          overlay.style.display = "none";
+        }
+      }
     }
+
   </script>
 </body>
 </html>

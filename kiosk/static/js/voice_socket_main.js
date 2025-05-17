@@ -1,5 +1,7 @@
 ﻿"use strict";
 
+console.log("✅ JS 작동 중입니다");
+
 let socket;
 let recognition;
 let recognizing = false;
@@ -11,11 +13,16 @@ function createWebSocket() {
   socket.onopen = () => {
     console.log('✅ WebSocket 연결됨');
 
-    if (localStorage.getItem("continueRecognition") === "true") {
-      localStorage.removeItem("continueRecognition");
-      console.log("🔁 페이지 전환 후 자동 음성 인식 재시작");
-      socket.send("resume_from_menu"); // ✅ 서버에 상태 복원 요청만 먼저 전송
+    if (window.location.pathname === "/pay_all") {
+      // pay_all_ready 먼저 전송
+      if (socket.readyState === WebSocket.OPEN) {
+        console.log("📨 pay_all_ready 전송");
+        socket.send("pay_all_ready");
 
+        // ✅ 장바구니 내역 읽기 요청
+        console.log("📨 read_cart 전송");
+        socket.send("read_cart");
+      }
     }
   };
 
@@ -23,13 +30,12 @@ function createWebSocket() {
     const text = event.data.trim();
     console.log('📩 서버 응답:', text);
 
-    // ✅ 마이크 제어 명령
     if (text === "mic_off") {
       console.log("🔇 서버 지시: 마이크 OFF");
       if (recognition) {
         try {
-          recognizing = false;  // ✅ 마이크 상태 먼저 false로 명확히
-          recognition.stop();   // ✅ try-catch로 감싸서 안정성 보장
+          recognizing = false;
+          recognition.stop();
         } catch (error) {
           console.error("❌ recognition.stop() 오류:", error);
         }
@@ -37,11 +43,8 @@ function createWebSocket() {
       return;
     }
 
-
     if (text === "mic_on") {
       console.log("🔊 서버 지시: 마이크 ON");
-
-      // 마이크 완전히 종료 후 재시작
       if (recognition && recognizing) {
         try {
           recognition.abort();
@@ -52,17 +55,11 @@ function createWebSocket() {
       }
 
       setTimeout(() => {
-        startRecognition();  // 약간의 텀 두고 시작
-      }, 100);  // 필요 시 50~150ms 사이로 조절 가능
-
+        startRecognition();
+      }, 100);
       return;
     }
 
-
-
-
-
-    // 🎯 페이지 이동 명령 처리
     if (text === "goto_menu") {
       console.log("📢 서버 지시: /order 페이지로 이동");
       localStorage.setItem("continueRecognition", "true");
@@ -70,25 +67,41 @@ function createWebSocket() {
       return;
     }
 
+    if (text === "go_to_pay") {
+      console.log("📢 서버 지시: /pay_all 페이지로 이동");
+      window.location.href = "/pay_all";
+      return;
+    }
+
+    // 💳 결제 팝업 띄우기
+    if (text === "popup_payment") {
+      console.log("💳 결제 팝업 띄우기");
+
+      const popup = document.getElementById("popup-overlay");
+      if (popup) {
+        popup.style.display = "flex";
+        console.log("✅ popup-overlay 표시 완료");
+      } else {
+        console.warn("❌ popup-overlay 요소를 찾을 수 없음");
+      }
+
+      // ✅ 5초 후 결제 완료 페이지로 이동
+      setTimeout(() => {
+        window.location.href = "/done";
+      }, 5000);
+    }
 
     if (text === "goto_start") {
       console.log("📢 서버 지시: /start 페이지로 이동");
-    
-      // ✅ 음성 인식 중지
       if (recognizing && recognition) {
         recognizing = false;
         recognition.stop();
         console.log("🛑 음성 인식 중단 후 페이지 이동");
       }
-    
       window.location.href = "/start";
       return;
     }
   };
-
-
-
-
 
   socket.onclose = () => {
     console.warn("⚠️ WebSocket 연결 종료");
@@ -122,7 +135,6 @@ function startRecognition() {
 
     let cleanText = result.replace(/\s/g, '').toLowerCase();
 
-    // 📛 시스템 음성 문장 무시
     const phrasesToIgnore = [
       "음성으로주문하시겠습니까",
       "음성주문을시작합니다",
@@ -131,16 +143,12 @@ function startRecognition() {
       "아메리카노2000원입니다옵션선택을진행할까요"
     ];
 
-    const shouldIgnore = phrasesToIgnore.some(p =>
-      cleanText.startsWith(p)
-    );
-
+    const shouldIgnore = phrasesToIgnore.some(p => cleanText.startsWith(p));
     if (shouldIgnore) {
       console.log("⏭️ 안내 문장은 전송 생략됨");
       return;
     }
 
-    // 🟢 긍정 응답일 경우 바로 전송
     const positives = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ"];
     if (positives.includes(cleanText)) {
       console.log("✅ 긍정 응답 → 서버로 전송");
@@ -150,7 +158,6 @@ function startRecognition() {
       return;
     }
 
-    // 🛰 서버로 텍스트 전송
     if (socket?.readyState === WebSocket.OPEN) {
       socket.send(result);
     }
@@ -171,15 +178,20 @@ function startRecognition() {
   console.log("🎤 음성 인식 시작");
 }
 
-
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOMContentLoaded 실행됨");
+
   window.speechSynthesis.cancel();
   createWebSocket();
 
-  document.body.addEventListener("click", () => {
-    console.log("🖱️ 화면 터치 → start_order 전송");
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send("start_order");
-    }
-  });
+  if (window.location.pathname.includes("start")) {
+    document.addEventListener("click", () => {
+      console.log("🖱️ 화면 클릭됨 → start_order 전송");
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send("start_order");
+      }
+    });
+  }
+
+  // /pay_all 처리 이미 onopen에서 하므로 여긴 비워도 됨
 });

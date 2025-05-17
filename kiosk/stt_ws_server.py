@@ -9,10 +9,27 @@ from asgiref.sync import sync_to_async
 from difflib import SequenceMatcher
 from playsound import playsound
 import threading
+from django.db import connection
+from django.db.utils import OperationalError
+
+async def send_text(websocket, message):
+    await websocket.send(message)
+
 
 sound_path = "C:/SoundAssets/ding.wav"
 
 
+from asgiref.sync import sync_to_async
+
+@sync_to_async
+def ensure_mysql_connection():
+    from django.db import connection
+    from django.db.utils import OperationalError
+
+    try:
+        connection.cursor()
+    except OperationalError:
+        connection.close()
 
 
 # Django 설정
@@ -186,6 +203,7 @@ async def get_chatgpt_response(user_input, gpt_messages):
     from kiosk.models import MenuItem
 
     # 메뉴 불러오기
+    await ensure_mysql_connection()
     menu_items = await sync_to_async(list)(MenuItem.objects.all())
     menu_names_cleaned = [item.name.replace(" ", "").lower() for item in menu_items]
     user_cleaned = user_input.replace(" ", "").lower()
@@ -204,8 +222,10 @@ async def get_chatgpt_response(user_input, gpt_messages):
 
     # 필터링된 메뉴 불러오기
     if category:
+        await ensure_mysql_connection()
         menu_items = await sync_to_async(list)(MenuItem.objects.filter(category=category))
     else:
+        await ensure_mysql_connection()
         menu_items = await sync_to_async(list)(MenuItem.objects.all())
 
     menu_names = [item.name for item in menu_items]
@@ -387,7 +407,7 @@ async def echo(websocket):
                 # 4. 약간 쉬었다가 (사용자 준비 시간 줌)
                 await asyncio.sleep(0.2)
 
-                # 5. 띵 소리 2 (→ 마이크 ON 유도)
+                # 5.음성 주문을 시작합니다.띵 소리 2 (→ 마이크 ON 유도)
                 threading.Thread(target=play_ding).start()
                 await asyncio.sleep(0.05)
                 await websocket.send("mic_on")
@@ -469,6 +489,7 @@ async def echo(websocket):
                     return
 
             elif state["step"] == "await_menu":
+                await ensure_mysql_connection()
                 menu_items = await sync_to_async(list)(MenuItem.objects.all())
 
                 cleaned_user_text = cleaned_text.replace(" ", "").lower()
@@ -795,19 +816,19 @@ async def echo(websocket):
 
 
                 elif is_negative(cleaned_text):
-                    total = sum(item["price"] for item in state["cart"])
-                    summary = "주문 내역입니다:\n"
-                    summary = "주문 내역입니다:\n"
+                    await send_text(websocket, "go_to_pay")
+                    state["step"] = "paying"
+
                     from collections import defaultdict
 
                     counter = defaultdict(lambda: {"count": 0, "total_price": 0, "name": "", "options": ""})
+                    summary = "주문 내역입니다:\n"
 
                     for item in state["cart"]:
                         size = item["options"].get("size")
                         temp = item["options"].get("temp")
                         shot = item["options"].get("shot")
 
-                        # 사이즈 '큰'은 '큰 거'로 자연스럽게 표기
                         opt_parts = []
                         if size:
                             opt_parts.append("사이즈 큰 거" if size == "큰" else f"사이즈 {size}")
@@ -829,18 +850,39 @@ async def echo(websocket):
                         summary += f"- {item['name']} {item['options']}  {item['count']}개에 {item['total_price']}원\n"
                         total += item["total_price"]
 
-                    summary += f"총 결제 금액은 {total}원입니다. 결제를 진행합니다."
+                    summary += f"총 결제 금액은 {total}원입니다"
+
+                    # ✅ 바로 읽어주기
+                    await synthesize_speech(summary, websocket, activate_mic=False)
+
+                    # ✅ 나중을 위해 저장해두기
+                    state["cart_summary"] = summary
 
 
-                    await websocket.send(summary)
-                    await synthesize_speech(summary, websocket, activate_mic=False)  # 마이크 off
+                # 🎯 while True 루프 안에서
+                received_text = await websocket.recv()
+                cleaned_text = clean_input(received_text)
+
+                # ✅ read_cart 요청 처리
+                if received_text == "read_cart":
+                    print("🧾 read_cart 수신됨")
+
+                    if "cart_summary" in state and state["cart_summary"]:
+                        await synthesize_speech(state["cart_summary"], websocket, activate_mic=False)
+                    else:
+                        await synthesize_speech("장바구니가 비어 있습니다.", websocket, activate_mic=False)
+
+                    # ✅ 팝업 띄우기 및 결제 음성 안내
+                    await websocket.send("popup_payment")
+                    await asyncio.sleep(1.3)
+
+                    final_announce = "결제를 진행합니다."
+                    await websocket.send(final_announce)
+                    await synthesize_speech(final_announce, websocket, activate_mic=False)
+
                     await asyncio.sleep(5)
-                    final_msg = "결제가 완료되었습니다. 감사합니다."
-                    await websocket.send(final_msg)
-                    await synthesize_speech(final_msg, websocket, activate_mic=False)  # 마이크 off
-
-                    await asyncio.sleep(2)
-                    await websocket.send("goto_start")
+                    await websocket.send("결제가 완료되었습니다. 감사합니다.")
+                    await synthesize_speech("결제가 완료되었습니다. 감사합니다.", websocket, activate_mic=False)
 
                     # 🔄 상태 초기화
                     state.update({
@@ -853,8 +895,10 @@ async def echo(websocket):
                         "finalized": False,
                         "first_order_done": False
                     })
-                    continue
+                    continue  # 🎯 다시 루프 시작
 
+
+                
                 else:
                     response_text = "추가 주문 여부를 네 또는 아니요로 말씀해주세요."
                     state["step"] = "waiting_additional_retry"

@@ -1,3 +1,4 @@
+{% load static %}
 
 <!DOCTYPE html>
 <html lang="ko">
@@ -7,12 +8,13 @@
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
-      src: url('fonts/Hakgyoansim.ttf') format('truetype');
+      src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
     }
     @font-face {
       font-family: 'BMDoHyeon';
-      src: url('fonts/BMDoHyeon.ttf') format('truetype');
+      src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
     }
+
 
     body {
       margin: 0;
@@ -135,15 +137,20 @@
 
     function completeSelection() {
       if (selections.size && selections.temp && selections.shot) {
-        alert("선택한 옵션:\n" +
-              "사이즈: " + selections.size + "\n" +
-              "온도: " + selections.temp + "\n" +
-              "샷: " + selections.shot);
-        // 실제 장바구니에 추가하는 로직은 여기 작성
+        // ✅ 부모 페이지의 함수 호출
+        const menu = localStorage.getItem("selectedMenu");
+        const price = parseInt(localStorage.getItem("selectedPrice"));
+
+        // 선택된 옵션 전달
+        window.parent.addToCartWithOptions(menu, price, selections);
+
+        // ✅ 팝업 닫기
+        window.parent.document.getElementById("popup-overlay").style.display = "none";
       } else {
         alert("모든 옵션을 선택해 주세요.");
       }
     }
   </script>
+
 </body>
 </html>

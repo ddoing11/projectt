@@ -7,6 +7,7 @@ import openai  # ChatGPT 호출용
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.shortcuts import render
 
 def voice_socket_dummy(request):
     return HttpResponse("voice_socket dummy - iframe용")
@@ -23,6 +24,20 @@ def order(request):
 
 def voice_socket_view(request):
     return render(request, 'voice_socket.html')
+
+def popup_coffee(request):
+    return render(request, 'popup/popup_coffee.html')
+
+def popup_drink(request):
+    return render(request, 'popup/popup_drink.html')
+
+def popup_tea(request):
+    print("🧪 popup_tea view 호출됨")
+    return render(request, 'popup/popup_tea.html')
+
+
+def pay_all(request):
+    return render(request, 'pay_all.html')
 
 @csrf_exempt
 def check_menu(request):

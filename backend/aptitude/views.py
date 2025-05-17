@@ -4,6 +4,7 @@ from kiosk.models import MenuItem
 import json
 from django.views.decorators.csrf import csrf_exempt
 import openai
+from django.shortcuts import render
 
 # ChatGPT 설정 (API 키는 settings에 보관하는 것이 좋음)
 openai.api_key = "YOUR_OPENAI_API_KEY"
@@ -19,6 +20,19 @@ def order_start_voice(request):
 # --- 주문 화면 ---
 def order(request):
     return render(request, 'order.html')
+
+def popup_coffee(request):
+    return render(request, 'popup/popup_coffee.html')
+
+def popup_drink(request):
+    return render(request, 'popup/popup_drink.html')
+
+def popup_tea(request):
+    print("🧪 popup_tea view 호출됨")
+    return render(request, 'popup/popup_tea.html')
+
+def pay_all(request):
+    return render(request, 'pay_all.html')
 
 # --- 음성 인식 결과 처리 ---
 @csrf_exempt
