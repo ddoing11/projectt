@@ -23,10 +23,27 @@
     }
   </style>
   <script>
-    // 3초 뒤에 start.html로 이동
+    const socket = new WebSocket("ws://localhost:8002");
+
+    socket.onopen = () => {
+      console.log("✅ WebSocket 연결됨");
+      socket.send("done_page_ready");  // 📨 서버에 준비 완료 알림
+    };
+
+    socket.onmessage = (event) => {
+      const message = event.data;
+      console.log("📩 서버 응답:", message);
+
+      if (message === "say_payment_done") {
+        console.log("🔊 '결제 완료' 음성 재생 트리거");
+        // 필요시 추가 작업 가능 (예: 애니메이션, 시각 효과 등)
+      }
+    };
+
+    // 6초 뒤에 /start로 이동
     setTimeout(() => {
-      window.location.href = 'start.html';
-    }, 3000);
+      window.location.href = '/start';
+    }, 6000);
   </script>
 </head>
 <body onclick="location.href='start.html'">

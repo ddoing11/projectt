@@ -8,6 +8,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.http import FileResponse
+from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
+import uuid
+import os
 
 def voice_socket_dummy(request):
     return HttpResponse("voice_socket dummy - iframe용")
@@ -38,6 +42,10 @@ def popup_tea(request):
 
 def pay_all(request):
     return render(request, 'pay_all.html')
+
+def done(request):
+    return render(request, 'done.html') 
+
 
 @csrf_exempt
 def check_menu(request):

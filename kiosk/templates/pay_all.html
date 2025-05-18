@@ -153,6 +153,27 @@
 
 </head>
 
+<script>
+  function showPopupWithRetry(retry = 0) {
+    const popup = document.getElementById('popup-overlay');
+    if (popup) {
+      popup.style.display = 'flex';
+      console.log("✅ 팝업 표시됨");
+      setTimeout(() => {
+        window.location.href = "/done";
+      }, 5000);
+    } else {
+      if (retry < 5) {
+        console.warn("❌ popup-overlay 끝내 찾을 수 없음. 재시도 중...", retry);
+        setTimeout(() => showPopupWithRetry(retry + 1), 300);
+      } else {
+        console.error("❌ popup-overlay 표시 실패: 5번 재시도 후도 실패");
+      }
+    }
+  }
+</script>
+
+
 <body>
 
   <div class="top-bar">
@@ -246,7 +267,7 @@
     }
   </style>
 
-  </div>
+
 
 
 
@@ -256,26 +277,24 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      console.log("✅ DOMContentLoaded 실행됨");
-
-      // socket이 없거나 닫혀 있다면 createWebSocket() 호출
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        createWebSocket();  // 외부 JS에서 정의된 함수여야 함
-      }
-
-      // 연결 후 서버에 결제 페이지 준비 완료 알림
-      const waitForSocket = setInterval(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          console.log("✅ WebSocket 재연결 완료");
-
-          socket.send("pay_all_ready");  // ✅ 결제 상태 준비 알림
-          socket.send("read_cart");      // ✅ 장바구니 읽기 요청 추가
-          clearInterval(waitForSocket);
+      // resume 플래그 있으면 서버에 복구 요청
+      if (localStorage.getItem("continueRecognition") === "true") {
+        localStorage.removeItem("continueRecognition");
+        console.log("🔁 pay_all 진입 후 서버에 상태 요청");
+        if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+          socket.send("resume_from_pay");
+        } else {
+          const retryInterval = setInterval(() => {
+            if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+              socket.send("resume_from_pay");
+              clearInterval(retryInterval);
+            }
+          }, 100);
         }
-      }, 100);  // 100ms 간격으로 연결 상태 확인
+      }
     });
+  </script> <!-- ✅ 꼭 닫아야 함 -->
 
-    </script>
   
 
 </body>

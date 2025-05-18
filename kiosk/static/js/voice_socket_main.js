@@ -6,29 +6,95 @@ let socket;
 let recognition;
 let recognizing = false;
 let resumeHandled = false;  // ✅ 상태 복원 응답 후 인식 시작 여부
+let isStarting = false; // 🔹 새로 추가
 
-function createWebSocket() {
-  socket = new WebSocket('ws://localhost:8002');
 
-  socket.onopen = () => {
-    console.log('✅ WebSocket 연결됨');
 
-    if (window.location.pathname === "/pay_all") {
-      // pay_all_ready 먼저 전송
-      if (socket.readyState === WebSocket.OPEN) {
-        console.log("📨 pay_all_ready 전송");
-        socket.send("pay_all_ready");
 
-        // ✅ 장바구니 내역 읽기 요청
-        console.log("📨 read_cart 전송");
-        socket.send("read_cart");
+function showPopupWithRetry(retryCount = 10) {
+      const popup = document.getElementById("popup-overlay");
+      if (popup) {
+        popup.style.display = "flex";
+        console.log("✅ popup-overlay 표시 완료");
+        setTimeout(() => {
+          window.location.href = "/done";
+        }, 5000);
+      } else if (retryCount > 0) {
+        console.warn(`❌ popup-overlay 없음 → 재시도 (${11 - retryCount})`);
+        setTimeout(() => showPopupWithRetry(retryCount - 1), 100);
+      } else {
+        console.error("❌ popup-overlay 끝내 찾을 수 없음. 팝업 표시 실패");
       }
     }
+
+
+
+function createWebSocket() {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    console.warn("⚠️ 이미 연결된 WebSocket 있음. 생략.");
+    return;
+  }
+  socket = new WebSocket("ws://localhost:8002");
+
+
+
+
+
+  socket.onopen = () => {
+    console.log("✅ WebSocket 연결됨");
+    console.log("📡 새 WebSocket 연결됨 (path:", window.location.pathname, ")");
+
+    const pagePath = window.location.pathname;
+
+    const clientId = localStorage.getItem("client_id");
+
+    socket.send(JSON.stringify({
+      type: "page_info",
+      path: window.location.pathname,
+      client_id: clientId
+    }));
+
+
+    if (pagePath === "/pay_all") {
+      // 연결 안정화 후 관련 메시지 전송
+      setTimeout(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          console.log("🧾 /pay_all 페이지에서 초기 메시지 전송");
+          socket.send("pay_all_ready");
+          socket.send("read_cart");
+
+          // 💡 질문 TTS 끝날 즈음에만 요청 (0.5~1초 후)
+          setTimeout(() => {
+            socket.send("request_mic_on");
+          }, 1000);
+        }
+      }, 200);
+    }
   };
+
 
   socket.onmessage = (event) => {
     const text = event.data.trim();
     console.log('📩 서버 응답:', text);
+
+    if (text === "popup_payment") {
+      console.log("💳 결제 팝업 띄우기");
+
+      const popup = document.getElementById("popup-overlay");
+      if (popup) {
+        popup.style.display = "block";
+
+        // 8초 후 자동 닫기
+        setTimeout(() => {
+          popup.style.display = "none";
+        }, 8000);
+      } else {
+        console.warn("❗ 팝업 요소를 찾을 수 없음: popup-overlay");
+      }
+    }
+
+
+    
 
     if (text === "mic_off") {
       console.log("🔇 서버 지시: 마이크 OFF");
@@ -43,8 +109,25 @@ function createWebSocket() {
       return;
     }
 
+    
     if (text === "mic_on") {
+      const currentPath = window.location.pathname;
+
+      const disableVoice = localStorage.getItem("disableVoice") === "true";
+        if (currentPath === "/order" && disableVoice) {
+          console.log("🚫 /order에서 disableVoice=true → mic_on 무시");
+          return;
+        }
+
       console.log("🔊 서버 지시: 마이크 ON");
+
+      if (recognizing || isStarting) {
+        console.log("⏭️ 이미 마이크 켜는 중이거나 켜짐 상태 → 무시");
+        return;
+      }
+
+
+
       if (recognition && recognizing) {
         try {
           recognition.abort();
@@ -56,10 +139,12 @@ function createWebSocket() {
 
       setTimeout(() => {
         startRecognition();
-      }, 100);
+      }, 200);
+
       return;
     }
 
+      
     if (text === "goto_menu") {
       console.log("📢 서버 지시: /order 페이지로 이동");
       localStorage.setItem("continueRecognition", "true");
@@ -69,27 +154,23 @@ function createWebSocket() {
 
     if (text === "go_to_pay") {
       console.log("📢 서버 지시: /pay_all 페이지로 이동");
-      window.location.href = "/pay_all";
+      location.assign("/pay_all");
       return;
     }
 
-    // 💳 결제 팝업 띄우기
-    if (text === "popup_payment") {
-      console.log("💳 결제 팝업 띄우기");
-
-      const popup = document.getElementById("popup-overlay");
-      if (popup) {
-        popup.style.display = "flex";
-        console.log("✅ popup-overlay 표시 완료");
-      } else {
-        console.warn("❌ popup-overlay 요소를 찾을 수 없음");
-      }
-
-      // ✅ 5초 후 결제 완료 페이지로 이동
-      setTimeout(() => {
-        window.location.href = "/done";
-      }, 5000);
+    if (text === "set_resume_flag") {
+      console.log("🧭 resume 플래그 설정");
+      localStorage.setItem("continueRecognition", "true");
+      return;
     }
+
+    console.log("🧭 현재 받은 메시지:", text);
+    if (text === "go_to_done") {
+      console.log("✅ done 페이지로 이동 시도");
+      window.location.href = "/done";
+    }
+
+
 
     if (text === "goto_start") {
       console.log("📢 서버 지시: /start 페이지로 이동");
@@ -101,20 +182,57 @@ function createWebSocket() {
       window.location.href = "/start";
       return;
     }
+
+    if (text === "set_disable_voice") {
+      console.log("🚫 음성 비활성화 플래그 설정");
+      localStorage.setItem("disableVoice", "true");
+      return;
+    }
+
   };
 
-  socket.onclose = () => {
-    console.warn("⚠️ WebSocket 연결 종료");
+  socket.onclose = (event) => {
+    console.warn("🔌 WebSocket 연결 종료됨. 재연결 시도...");
+    console.log("🔌 WebSocket 종료 상세:", event.code, event.reason);
+
+    setTimeout(() => {
+      window.location.reload();  // 또는 reconnectSocket()
+    }, 100);  // ⏱ 1초 후 재시도
   };
+
 
   socket.onerror = (error) => {
     console.error("❌ WebSocket 오류:", error);
   };
 }
 
-function startRecognition() {
-  if (recognizing) return;
 
+// 🔼 다른 함수들과 함께, startRecognition() 함수 정의 전에!
+function stripSystemPrompts(text) {
+  const patterns = [
+    "결제를진행할까요",
+    "옵션선택을진행할까요",
+    "음성주문을시작합니다",
+    "어떤메뉴를원하세요",
+    "음성으로주문하시겠습니까",
+    "아메리카노2000원입니다옵션선택을진행할까요"
+  ];
+  for (const pattern of patterns) {
+    if (text.startsWith(pattern)) {
+      text = text.replace(pattern, "");
+    }
+  }
+  return text.trim();
+}
+
+function startRecognition() {
+  console.log("📣 startRecognition() 호출됨");
+  if (recognizing || isStarting) {
+    console.log("⏭️ 마이크 켜는 중이거나 이미 켜짐 → 무시");
+    return;
+
+  }
+  isStarting = true;  // 🔐 여기서만 설정
   recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   recognition.lang = 'ko-KR';
   recognition.interimResults = false;
@@ -135,6 +253,8 @@ function startRecognition() {
 
     let cleanText = result.replace(/\s/g, '').toLowerCase();
 
+    cleanText = stripSystemPrompts(cleanText);
+
     const phrasesToIgnore = [
       "음성으로주문하시겠습니까",
       "음성주문을시작합니다",
@@ -144,6 +264,7 @@ function startRecognition() {
     ];
 
     const shouldIgnore = phrasesToIgnore.some(p => cleanText.startsWith(p));
+
     if (shouldIgnore) {
       console.log("⏭️ 안내 문장은 전송 생략됨");
       return;
@@ -175,14 +296,28 @@ function startRecognition() {
 
   recognition.start();
   recognizing = true;
+  isStarting = false;  // ✅ 마이크 시작 완료
   console.log("🎤 음성 인식 시작");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOMContentLoaded 실행됨");
 
-  window.speechSynthesis.cancel();
+  // 고유 client_id 생성 및 유지
+  const clientId = localStorage.getItem("client_id") || crypto.randomUUID();
+  localStorage.setItem("client_id", clientId);
+
+  // 기존 WebSocket이 있다면 닫고
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+    console.warn("🔁 기존 WebSocket을 닫습니다.");
+    socket.onclose = null;  // 💡 자동 재연결 방지
+    socket.onmessage = null;      // ✅ 메시지 리스너 제거 (여기!)
+    socket.close();
+    socket = null;  // ✅ 명시적으로 null로 초기화
+  }
+
+  // 새로 연결
   createWebSocket();
+
 
   if (window.location.pathname.includes("start")) {
     document.addEventListener("click", () => {
@@ -193,5 +328,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // /pay_all 처리 이미 onopen에서 하므로 여긴 비워도 됨
+  // ✅ 👉 /order 페이지 진입 시 음성 인식 여부 결정
+  if (window.location.pathname === "/order") {
+    const disableVoice = localStorage.getItem("disableVoice") === "true";
+    if (disableVoice) {
+      console.log("🔇 disableVoice=true → 음성 인식 비활성화");
+      localStorage.removeItem("disableVoice");
+    } else {
+      console.log("🎤 음성 인식 요청");
+
+      // ✅ 상태 복원을 서버에 요청 (step = await_menu)
+      socket.send("resume_from_menu");
+    }
+  }
+
+
+
 });

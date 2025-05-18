@@ -18,6 +18,7 @@ urlpatterns = [
     path("popup/popup_drink/", views.popup_drink, name='popup_drink'),
     path("popup/popup_tea/", views.popup_tea, name='popup_tea'),
     path('pay_all', views.pay_all, name='pay_all'),
+    path('done/', views.done, name='done'),
 
 
 ]

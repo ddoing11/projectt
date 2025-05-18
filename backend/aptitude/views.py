@@ -34,6 +34,10 @@ def popup_tea(request):
 def pay_all(request):
     return render(request, 'pay_all.html')
 
+
+def done(request):
+    return render(request, 'done.html') 
+
 # --- 음성 인식 결과 처리 ---
 @csrf_exempt
 def process_response(request):

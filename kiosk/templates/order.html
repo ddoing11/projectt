@@ -226,7 +226,7 @@
 </head>
 <body>
   <div class="top-bar">
-    <button class="home-button" onclick="location.href='start.html'">
+    <button class="home-button" onclick="location.href='/start'">
       <img src="{% static 'images/home_icon.png' %}" alt="처음으로">
       <span>처음으로</span>
     </button>
@@ -393,15 +393,23 @@
       if (localStorage.getItem("continueRecognition") === "true") {
         localStorage.removeItem("continueRecognition");
         console.log("🔁 order 진입 후 서버에 상태 요청");
-        if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-          socket.send("resume_from_menu");
+        
+        
+        const disableVoice = localStorage.getItem("disableVoice") === "true";
+        if (!disableVoice) {
+          if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+            socket.send("resume_from_menu");
+          } else {
+            const retryInterval = setInterval(() => {
+              if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+                socket.send("resume_from_menu");
+                clearInterval(retryInterval);
+              }
+            }, 100);
+          }
         } else {
-          const retryInterval = setInterval(() => {
-            if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-              socket.send("resume_from_menu");
-              clearInterval(retryInterval);
-            }
-          }, 100);
+          console.log("🚫 disableVoice=true → resume_from_menu 전송 생략");
+          localStorage.removeItem("disableVoice");  // 사용 후 제거
         }
       }
 
