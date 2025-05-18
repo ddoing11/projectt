@@ -1,10 +1,11 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>옵션 선택</title>
+  <script src="{% static 'js/voice_socket_main.js' %}?v=버전"></script>
+
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
@@ -14,18 +15,19 @@
       font-family: 'BMDoHyeon';
       src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
     }
+    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
 
-
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      font-family: 'Hakgyoansim', sans-serif;
       width: 100vw;
       height: 100vh;
+      overflow: hidden;
+      background-color: rgba(0, 0, 0, 0.4);
+      font-family: 'Hakgyoansim', sans-serif;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
     }
 
     .popup {
@@ -33,30 +35,36 @@
       height: 1282px;
       background-color: white;
       border-radius: 20px;
-      padding: 60px;
+      padding: 80px;
       box-sizing: border-box;
+      font-family: 'BMDoHyeon', sans-serif;
     }
 
     .popup h2 {
       text-align: center;
-      font-size: 48px;
-      margin-bottom: 40px;
-      font-family: 'BMDoHyeon', sans-serif;
+      font-size: 52px;
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+
+    .divider {
+      height: 2px;
+      background-color: #999;
+      margin: 40px 0;
     }
 
     .section {
-      margin-bottom: 50px;
+      margin-bottom: 10px;
     }
 
     .section-title {
-      font-size: 36px;
-      margin-bottom: 20px;
-      font-family: 'BMDoHyeon', sans-serif;
+      font-size: 42px;
+      margin: 20px 0;
     }
 
     .options {
       display: flex;
-      gap: 30px;
+      gap: 40px;
     }
 
     .option-button {
@@ -75,23 +83,50 @@
       color: white;
     }
 
-    .confirm-button {
+    .option-button.hot:not(.selected) { color: red; }
+    .option-button.ice:not(.selected) { color: blue; }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 80px;
+    }
+
+    .confirm-button, .back-button {
       font-family: 'Hakgyoansim', sans-serif;
       font-size: 40px;
       background-color: #5c4033;
       color: white;
       border: none;
-      padding: 30px 80px;
-      border-radius: 30px;
-      display: block;
-      margin: 60px auto 0;
+      padding: 30px 100px;
+      border-radius: 50px;
       cursor: pointer;
+    }
+
+    button {
+      transition: all 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(1.15);
+    }
+
+    .option-button:active,
+    .confirm-button:active,
+    .back-button:active {
+      transform: translateY(4px);
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
     }
   </style>
 </head>
+
 <body>
   <div class="popup">
     <h2>옵션 선택</h2>
+
+    <!-- ① 제목 하단 구분선 -->
+    <div class="divider"></div>
 
     <div class="section">
       <div class="section-title">사이즈 선택</div>
@@ -101,13 +136,19 @@
       </div>
     </div>
 
+    <!-- ② 사이즈 선택 후 구분선 -->
+    <div class="divider"></div>
+
     <div class="section">
       <div class="section-title">핫/아이스 선택</div>
       <div class="options" id="temp-options">
-        <button class="option-button" onclick="selectOption(this, 'temp')">핫</button>
-        <button class="option-button" onclick="selectOption(this, 'temp')">아이스</button>
+        <button class="option-button hot" onclick="selectOption(this, 'temp')">핫</button>
+        <button class="option-button ice" onclick="selectOption(this, 'temp')">아이스</button>
       </div>
     </div>
+
+    <!-- ③ 핫/아이스 선택 후 구분선 -->
+    <div class="divider"></div>
 
     <div class="section">
       <div class="section-title">샷 추가</div>
@@ -118,15 +159,14 @@
       </div>
     </div>
 
-    <button class="confirm-button" onclick="completeSelection()">선택 완료</button>
+    <div class="button-row">
+      <button class="back-button" onclick="goBack()">돌아가기</button>
+      <button class="confirm-button" onclick="completeSelection()">선택 완료</button>
+    </div>
   </div>
 
   <script>
-    let selections = {
-      size: null,
-      temp: null,
-      shot: null
-    };
+    let selections = { size: null, temp: null, shot: null };
 
     function selectOption(button, category) {
       const buttons = document.getElementById(category + '-options').querySelectorAll('button');
@@ -137,20 +177,18 @@
 
     function completeSelection() {
       if (selections.size && selections.temp && selections.shot) {
-        // ✅ 부모 페이지의 함수 호출
         const menu = localStorage.getItem("selectedMenu");
         const price = parseInt(localStorage.getItem("selectedPrice"));
-
-        // 선택된 옵션 전달
         window.parent.addToCartWithOptions(menu, price, selections);
-
-        // ✅ 팝업 닫기
         window.parent.document.getElementById("popup-overlay").style.display = "none";
       } else {
         alert("모든 옵션을 선택해 주세요.");
       }
     }
-  </script>
 
+    function goBack() {
+      window.parent.document.getElementById("popup-overlay").style.display = "none";
+    }
+  </script>
 </body>
 </html>
