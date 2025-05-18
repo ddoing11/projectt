@@ -166,6 +166,7 @@
     }
 
     .cart-item {
+      position: relative;
       min-width: 240px;
       max-width: 240px;
       border-right: 2px solid #ccc;
@@ -260,6 +261,24 @@
       transform: scale(1.1);
       transition: all 0.1s ease;
     }
+    .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 2px; /* ← 구분선에 붙도록 조정 */
+      font-size: 50px;
+      background: none;
+      border: none;
+      color: red;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      z-index: 10; /* 혹시 겹칠 요소 대비 */
+    }
+
+    .remove-btn:hover {
+      color: darkred;
+    }
+
 
   </style>
 
@@ -267,8 +286,8 @@
 
 <body>
   <div class="top-bar">
-    <button class="home-button" onclick="location.href='{% url "start" %}'">
-      <img src="{% static 'images/home_icon.png' %}" alt="처음으로">
+    <button onclick="clearCartAndGo('{% url 'start' %}')" style="background-color: #eceae7; border: none; padding: 20px 40px; border-radius: 20px; font-size: 48px; font-family: 'BMDoHyeon'; opacity: 0.7; display: flex; align-items: center; gap: 10px;">
+      <img src="{% static 'images/home_icon.png' %}" alt="처음으로" style="width: 60px;">
       <span>처음으로</span>
     </button>
     <div class="top-bar-title">메뉴</div>
@@ -378,19 +397,27 @@
         item.classList.add("cart-item");
 
         item.innerHTML = `
+          <button class="remove-btn" onclick="removeItem('${data.name}', \`${data.options}\`)">×</button>
           <img src="${data.image}" alt="">
           <div class="cart-info">
             <div class="options">${data.options}</div>
             <div class="quantity-control">
-              <button class="quantity-btn" onclick="changeQuantity('${data.name}', '${data.options}', -1)">-</button>
+              <button class="quantity-btn" onclick="changeQuantity('${data.name}', \`${data.options}\`, -1)">-</button>
               <span class="quantity">${data.quantity}</span>
-              <button class="quantity-btn" onclick="changeQuantity('${data.name}', '${data.options}', 1)">+</button>
+              <button class="quantity-btn" onclick="changeQuantity('${data.name}', \`${data.options}\`, 1)">+</button>
             </div>
             <div class="price">${Number(data.basePrice) * Number(data.quantity)}원</div>
           </div>
         `;
+
         cartItems.appendChild(item);
       });
+    }
+    function removeItem(name, options) {
+      let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      cart = cart.filter(item => !(item.name === name && item.options === options));
+      localStorage.setItem("cart", JSON.stringify(cart));
+      renderCart();
     }
 
     function changeQuantity(name, options, delta) {

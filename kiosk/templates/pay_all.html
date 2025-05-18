@@ -144,12 +144,14 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 1315px;
-      height: 1282px;
+      width: 100vw;     /* ✅ 화면 전체 너비 */
+      height: 100vh;
       background: rgba(0,0,0,0.4);
       z-index: 9999;
       justify-content: center;
       align-items: center;
+      border-radius: 20px;         /* ✅ 부모도 둥글게 */
+      overflow: hidden; 
     }
 
     #popup-overlay iframe {
@@ -157,6 +159,9 @@
       height: 1282px;
       border: none;
       border-radius: 20px;
+      overflow: hidden; /* ✅ 추가 */
+      background-color: white; /* ✅ 배경 명시 */
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     button {
       transition: all 0.2s ease;

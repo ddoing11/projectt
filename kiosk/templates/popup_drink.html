@@ -1,48 +1,45 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <title>옵션 선택</title>
-  <script src="{% static 'js/voice_socket_main.js' %}?v=버전"></script>
+  <script src="{% static 'js/voice_socket_main.js' %}?v=1.0"></script>
 
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
       src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
-      }
-
+    }
     @font-face {
       font-family: 'BMDoHyeon';
       src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
     }
 
-
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
       background-color: rgba(0, 0, 0, 0.4);
       font-family: 'Hakgyoansim', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
 
     .popup {
-      background: white;
       width: 1315px;
       height: 1282px;
+      background-color: white;
       border-radius: 20px;
       padding: 80px;
       box-sizing: border-box;
       font-family: 'BMDoHyeon', sans-serif;
     }
 
-    .popup h2 {
+    h2 {
       font-size: 52px;
       text-align: center;
       margin-bottom: 40px;
@@ -82,32 +79,41 @@
       color: white;
     }
 
-    .option-button.hot:not(.selected) {
-      color: red;
+    .option-button.hot:not(.selected) { color: red; }
+    .option-button.ice:not(.selected) { color: blue; }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-top: 80px;
     }
 
-    .option-button.ice:not(.selected) {
-      color: blue;
-    }
-
-    .complete-button {
-      display: block;
+    .confirm-button,
+    .back-button {
       font-family: 'Hakgyoansim', sans-serif;
       font-size: 40px;
-      margin: 60px auto 0;
-      background: #5c4033;
+      background-color: #5c4033;
       color: white;
+      border: none;
       padding: 30px 100px;
       border-radius: 50px;
       cursor: pointer;
-      border: none;
     }
+
     button {
       transition: all 0.2s ease;
     }
 
     button:active {
-      transform: scale(1.10);
+      transform: scale(1.15);
+    }
+
+    .option-button:active,
+    .confirm-button:active,
+    .back-button:active {
+      transform: translateY(4px);
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
     }
   </style>
 </head>
@@ -140,10 +146,21 @@
       <button class="option-button" data-group="shot">2번 (+600원)</button>
     </div>
 
-    <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+    <div class="button-row">
+      <button class="back-button" onclick="goBack()">돌아가기</button>
+      <button class="confirm-button" onclick="completeSelection()">선택 완료</button>
+    </div>
   </div>
 
   <script>
+    // 선택 초기화 함수
+    function resetAllOptions() {
+      document.querySelectorAll(".option-button").forEach(btn => {
+        btn.classList.remove("selected");
+      });
+    }
+
+    // 옵션 클릭 처리
     document.querySelectorAll(".option-button").forEach(button => {
       button.addEventListener("click", () => {
         const group = button.getAttribute("data-group");
@@ -154,6 +171,7 @@
       });
     });
 
+    // 선택 완료
     function completeSelection() {
       const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
       const hotice = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
@@ -164,17 +182,27 @@
         return;
       }
 
-      // 부모 페이지로 선택 결과 전달
-      window.parent.postMessage({
-        type: "popup-complete",
-        options: `${size}, ${hotice}, ${shot}`
-      }, "*");
+      const options = `${size}\n${hotice}\n샷: ${shot}`;
+      window.parent.postMessage({ type: "popup-complete", options: options }, "*");
 
-      // ⭐ 선택된 버튼들만 초기화 (팝업은 그대로 유지)
-      document.querySelectorAll(".option-button").forEach(button => {
-        button.classList.remove("selected");
-      });
+      // 선택 완료 후 옵션 초기화
+      resetAllOptions();
     }
+
+    function goBack() {
+      const overlay = window.parent.document.getElementById("popup-overlay");
+      if (overlay) overlay.style.display = "none";
+    }
+
+    // 로드시 초기화
+    window.onload = resetAllOptions;
+
+    // 부모로부터 메시지로 초기화 요청 받기
+    window.addEventListener("message", function (event) {
+      if (event.data.type === "reset-options") {
+        resetAllOptions();
+      }
+    });
   </script>
 </body>
 </html>
