@@ -127,6 +127,7 @@
       padding-top: 10px;
     }
     .cart-item {
+      position: relative;
       min-width: 240px;
       border-right: 2px solid #ccc;
       padding: 15px;
@@ -189,6 +190,25 @@
       transform: scale(1.1);
       transition: all 0.1s ease;
     }
+    .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 2px; /* ← 구분선에 붙도록 조정 */
+      font-size: 50px;
+      background: none;
+      border: none;
+      color: red;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      z-index: 10; /* 혹시 겹칠 요소 대비 */
+    }
+
+    .remove-btn:hover {
+      color: darkred;
+    }
+
+
   </style>
 </head>
 
@@ -271,21 +291,27 @@ function renderCart() {
     item.classList.add("cart-item");
 
     item.innerHTML = `
+      <button class="remove-btn" onclick="removeItem('${data.name}', \`${data.options}\`)">×</button>
       <img src="${data.image}" alt="">
       <div class="cart-info">
-        <div class="options">${data.options || ''}</div> 
-        <div class="options" style="display:none;">${data.name}</div>
+        <div class="options">${data.options}</div>
         <div class="quantity-control">
-          <button class="quantity-btn" onclick="decreaseQuantity('${data.name}')">-</button>
+          <button class="quantity-btn" onclick="changeQuantity('${data.name}', \`${data.options}\`, -1)">-</button>
           <span class="quantity">${data.quantity}</span>
-          <button class="quantity-btn" onclick="increaseQuantity('${data.name}')">+</button>
+          <button class="quantity-btn" onclick="changeQuantity('${data.name}', \`${data.options}\`, 1)">+</button>
         </div>
         <div class="price">${Number(data.basePrice) * Number(data.quantity)}원</div>
-        <div class="base-price" style="display:none;">${data.basePrice}</div>
       </div>
     `;
+
     cartArea.appendChild(item);
   });
+}
+function removeItem(name, options) {
+  let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  cart = cart.filter(item => !(item.name === name && item.options === options));
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
 }
 
 function increaseQuantity(name) {
