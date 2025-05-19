@@ -21,8 +21,8 @@
       margin: 0;
       padding: 0;
       width: 1640px;
-      height: 2360px;
-      background-color: #fdfaf7;
+      height: 2360px; 
+      background-color: #fdf7f7;;
       font-family: 'Hakgyoansim', sans-serif;
       overflow: hidden;
     }
@@ -33,12 +33,18 @@
       align-items: center;
       padding: 40px 80px 20px;
       border-bottom: 2px solid #999;
+      position: relative;
     }
 
     .top-bar-title {
       font-size: 60px;
-      font-weight: bold;
       font-family: 'DalseoDarling', cursive;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: bold;
+      width: 300px; /* ⭐ 고정폭 추가 */
+      text-align: center; /* ⭐ 글자 중앙정렬 */
     }
 
     .home-button {
@@ -92,13 +98,29 @@
 
     .arrow-right {
       position: absolute;
-      top: 600px;            /* 딱 카드 중앙 높이 맞춤 */
-      right: 0px;            /* 오른쪽 끝에서 조금 띄움 */
-      width: 150px;            /* 이미지 크기 */
+      top: 610px; /* ✅ 세로 정확히 중간 근처 */
+      left: 1520px; /* ✅ 가로 오른쪽 살짝 안쪽 */
+      width: 170px;
       height: auto;
       cursor: pointer;
-      z-index: 10;
+      z-index: 1000;
     }
+
+    .arrow-left {
+    position: absolute;
+    top: 950px;
+    left: -40px;
+    width: 170px;
+    height: auto;
+    cursor: pointer;
+    z-index: 1000;
+    display: none;  /* 기본은 숨김 */
+  }
+
+  /* ✅ drink2 탭이 활성화된 경우에만 표시 */
+  #tab-drink2.menu-tab.active ~ .arrow-left {
+    display: block;
+  }
 
     
  
@@ -106,6 +128,7 @@
     .menu-tab {
       display: none;
       position: relative; 
+      overflow: visible; 
     }
     .menu-tab.active {
       display: grid;
@@ -121,9 +144,11 @@
       background: white;
     }
 
+   
     .menu-item img {
       height: 400px;
     }
+
 
     .menu-item .name {
       margin-top: 30px;
@@ -136,6 +161,7 @@
       color: #3300cc;
       margin-top: 15px;
     }
+
 
     .bottom-box {
       margin: 55px 100px;
@@ -151,6 +177,7 @@
       font-weight: bold;
       margin-bottom: 10px;
     }
+
 
     .middle-line {
       width: 800px;
@@ -235,12 +262,17 @@
   </div>
 
   <div class="tab-menu">
-    <button class="active" onclick="showTab('coffee', this)">커피</button>
-    <button onclick="showTab('drink', this)">음료</button>
+    <button id="tab-btn-coffee" onclick="showTab('coffee', this)">커피</button>
+    <button id="tab-btn-drink" onclick="showTab('drink', this)">음료</button>
     <button onclick="showTab('tea', this)">차</button>
     <button onclick="showTab('dessert', this)">디저트</button>
   </div>
 
+  <img id="arrow-left" class="arrow-left"
+     src="{% static 'images/arrow_right.png' %}"
+     style="transform: rotate(180deg);"
+     onclick="showTab('drink', this)" />
+     
   <div id="tab-coffee" class="menu-tab active">
     <div class="menu-item">
       <img src="{% static 'images/americano.png' %}" alt="아메리카노" />
@@ -314,7 +346,7 @@
   </div>
 
   <!-- 왼쪽 화살표로 이전 탭(drink)으로 이동 -->
-  <img class="arrow-right" style="left: 0; right: auto; transform: rotate(180deg);" src="{% static 'images/arrow_right.png' %}" alt="이전" onclick="showTab('drink', this)" />
+   
 </div>
 
 
@@ -375,18 +407,54 @@
   </div>
 
   <script>
-    function showTab(category, button) {
-      document.querySelectorAll('.menu-tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelector(`#tab-${category}`).classList.add('active');
-      document.querySelectorAll('.tab-menu button').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+    function showTab(tabName, btn) {
+      // 탭 전환
+      document.querySelectorAll('.menu-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      document.querySelectorAll('.tab-menu button').forEach(button => {
+        button.classList.remove('active');
+      });
+
+      // ✅ 현재 누른 버튼에만 active 추가
+      btn.classList.add('active');
+      
+      // ✅ 버튼에 active 클래스 적용
+      if (tabName === 'drink' || tabName === 'drink2') {
+        // 음료 탭이면 "음료" 버튼에 적용
+        const drinkBtn = document.getElementById('tab-btn-drink');
+        if (drinkBtn) drinkBtn.classList.add('active');
+      } else {
+        // 그 외엔 클릭된 버튼에 적용
+        if (btn) btn.classList.add('active');
+      }
+
+      
+    
+      // 화살표 표시 조건
+      const arrow = document.getElementById('arrow-left');
+      if (tabName === 'drink2') {
+        arrow.style.display = 'block';
+      } else {
+        arrow.style.display = 'none';
+      }
     }
 
+      
+
     document.addEventListener("DOMContentLoaded", () => {
+
+      const defaultButton = document.getElementById("tab-btn-coffee");
+      showTab("coffee", defaultButton);
+
       // 음성 인식 상태 복구
       if (localStorage.getItem("continueRecognition") === "true") {
         localStorage.removeItem("continueRecognition");
         console.log("🔁 order 진입 후 서버에 상태 요청");
+
+    
         
         
         const disableVoice = localStorage.getItem("disableVoice") === "true";

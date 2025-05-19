@@ -5,7 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=1640, user-scalable=no" />
   <title>메뉴 주문</title>
-  <script src="{% static 'js/voice_socket_main.js' %}"></script>
+  <script src="{% static 'js/voice_socket_main.js' %}" defer></script>
+
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
@@ -101,7 +102,7 @@
 
     .arrow-right {
       position: absolute;
-      top: 620px; /* ✅ 세로 정확히 중간 근처 */
+      top: 615px; /* ✅ 세로 정확히 중간 근처 */
       left: 1520px; /* ✅ 가로 오른쪽 살짝 안쪽 */
       width: 170px;
       height: auto;
@@ -111,12 +112,13 @@
 
     .arrow-left {
       position: absolute;
-      top: 620px;    /* 필요 시 조절 가능 */
-      left: 20px;      /* 화면 왼쪽에 붙이기 */
-      width: 140px;
+      top: 940px;    /* 필요 시 조절 가능 */
+      left: -50px;      /* 화면 왼쪽에 붙이기 */
+      width: 170px;
       height: auto;
       cursor: pointer;
       z-index: 1000;
+      display: none;
     }
 
 
@@ -316,108 +318,111 @@
   </div>
 
   <div class="tab-menu">
-    <button class="active" onclick="showTab('coffee', this)">커피</button>
-    <button onclick="showTab('drink', this)">음료</button>
+    <button id="tab-btn-coffee" onclick="showTab('coffee', this)">커피</button>
+    <button id="tab-btn-drink" onclick="showTab('drink', this)">음료</button>
     <button onclick="showTab('tea', this)">차</button>
     <button onclick="showTab('dessert', this)">디저트</button>
   </div>
 
+  <img id="arrow-left" class="arrow-left"
+     src="{% static 'images/arrow_right.png' %}"
+     style="transform: rotate(180deg);"
+     onclick="showTab('drink', this)" />
+
   <div id="tab-coffee" class="menu-tab active">
-    <div class="menu-item" data-name="아메리카노" data-price="2000" data-image="{% static 'images/americano.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/americano.png' %}" alt="아메리카노" />
       <div class="name">아메리카노</div>
       <div class="price">2000원</div>
     </div>
-    <div class="menu-item" data-name="카페 라떼" data-price="2500" data-image="{% static 'images/latte.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/latte.png' %}" alt="카페 라떼" />
       <div class="name">카페 라떼</div>
       <div class="price">2500원</div>
     </div>
-    <div class="menu-item" data-name="토피넛 라떼" data-price="4800" data-image="{% static 'images/toffee.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/toffee.png' %}" alt="토피넛 라떼" />
       <div class="name">토피넛 라떼</div>
       <div class="price">4800원</div>
     </div>
-    <div class="menu-item" data-name="달고나 라떼" data-price="4800" data-image="{% static 'images/dalcona.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/dalcona.png' %}" alt="달고나 라떼" />
       <div class="name">달고나 라떼</div>
       <div class="price">4800원</div>
     </div>
+    
   </div>
 
-
   <div id="tab-drink" class="menu-tab">
-    <div class="menu-item" data-name="초코 라떼" data-price="5200" data-image="{% static 'images/초코라떼.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/초코라떼.png' %}" alt="초코라떼">
       <div class="name">초코 라떼</div>
       <div class="price">5200원</div>
     </div>
-    <div class="menu-item" data-name="녹차 라떼" data-price="5200" data-image="{% static 'images/녹차라떼.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/녹차라떼.png' %}" alt="녹차라떼">
       <div class="name">녹차 라떼</div>
       <div class="price">5200원</div>
     </div>
-    <div class="menu-item" data-name="딸기 라떼" data-price="5400" data-image="{% static 'images/딸기라떼.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/딸기라떼.png' %}" alt="딸기라떼">
       <div class="name">딸기 라떼</div>
       <div class="price">5400원</div>
     </div>
-    <div class="menu-item" data-name="요거트 스무디" data-price="5500" data-image="{% static 'images/요거트스무디.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/요거트스무디.png' %}" alt="요거트스무디">
       <div class="name">요거트 스무디</div>
       <div class="price">5500원</div>
     </div>
-    <!-- 오른쪽 화살표 이미지 -->
-    <img src="{% static 'images/arrow_right.png' %}" class="arrow-right" onclick="showTab('drink2', this)" />
+    <img class="arrow-right" src="{% static 'images/arrow_right.png' %}" alt="다음" onclick="showTab('drink2', this)" />
+  </div>
+</div>
 
 
+<div id="tab-drink2" class="menu-tab">
+  <div class="menu-item">
+    <img src="{% static 'images/아이스티.png' %}" alt="아이스티">
+    <div class="name">아이스티</div>
+    <div class="price">3800원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/아샷추.png' %}" alt="아샷추">
+    <div class="name">아샷추</div>
+    <div class="price">4200원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/레몬에이드.png' %}" alt="레몬 에이드">
+    <div class="name">레몬 에이드</div>
+    <div class="price">4200원</div>
+  </div>
+  <div class="menu-item">
+    <img src="{% static 'images/자몽에이드.png' %}" alt="자몽 에이드">
+    <div class="name">자몽 에이드</div>
+    <div class="price">4200원</div>
   </div>
 
-
-  <div id="tab-drink2" class="menu-tab">
-    <div class="menu-item" data-name="아이스티" data-price="3800" data-image="{% static 'images/아이스티 (1).png' %}">
-      <img src="{% static 'images/아이스티.png' %}" alt="아이스티">
-      <div class="name">아이스티</div>
-      <div class="price">3800원</div>
-    </div>
-    <div class="menu-item" data-name="아샷추" data-price="4200" data-image="{% static 'images/아샷추 (1).png' %}">
-      <img src="{% static 'images/아샷추.png' %}" alt="아샷추">
-      <div class="name">아샷추</div>
-      <div class="price">4200원</div>
-    </div>
-    <div class="menu-item" data-name="레몬 에이드" data-price="4200" data-image="{% static 'images/레몬에이드 (1).png' %}">
-      <img src="{% static 'images/레몬에이드.png' %}" alt="레몬에이드">
-      <div class="name">레몬 에이드</div>
-      <div class="price">4200원</div>
-    </div>
-    <div class="menu-item" data-name="자몽 에이드" data-price="4200" data-image="{% static 'images/자몽에이드 (1).png' %}">
-      <img src="{% static 'images/자몽에이드.png' %}" alt="자몽 에이드">
-      <div class="name">자몽 에이드</div>
-      <div class="price">4200원</div>
-    </div>
-    <img src="{% static 'images/arrow_left.png' %}" class="arrow-left" onclick="showTab('drink', this)" />
-
-  </div>
+  
+</div>
 
 
 
   <div id="tab-tea" class="menu-tab">
-    <div class="menu-item" data-name="히비스커스" data-price="4500" data-image="{% static 'images/히비스커스.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/히비스커스.png' %}" alt="히비스커스" />
       <div class="name">히비스커스</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item" data-name="캐모마일" data-price="4500" data-image="{% static 'images/캐모마일.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/캐모마일.png' %}" alt="캐모마일" />
       <div class="name">캐모마일</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item" data-name="루이보스" data-price="4500" data-image="{% static 'images/루이보스.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/루이보스.png' %}" alt="루이보스" />
       <div class="name">루이보스</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item" data-name="얼그레이" data-price="4500" data-image="{% static 'images/얼그레이.png' %}">
+    <div class="menu-item">
       <img src="{% static 'images/얼그레이.png' %}" alt="얼그레이" />
       <div class="name">얼그레이</div>
       <div class="price">4500원</div>
@@ -462,39 +467,43 @@
     <iframe id="popup-frame"></iframe> <!-- ✅ src는 자바스크립트로 설정 -->
   </div>
 
-  <script>
-    
-    window.showTab = function(category, button) {
-      document.querySelectorAll('.menu-tab').forEach(tab => tab.classList.remove('active'));
-      document.querySelector(`#tab-${category}`).classList.add('active');
-      document.querySelectorAll('.tab-menu button').forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+  <script defer>
+  
+
+    window.showTab = function(tabName, btn) {
+      // 탭 전환
+      document.querySelectorAll('.menu-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+
+      // 버튼 스타일 처리
+      document.querySelectorAll('.tab-menu button').forEach(button => {
+        button.classList.remove('active');
+      });
+
+      if (tabName === 'drink' || tabName === 'drink2') {
+        const drinkBtn = document.getElementById('tab-btn-drink');
+        if (drinkBtn) drinkBtn.classList.add('active');
+      } else if (btn) {
+        btn.classList.add('active');
+      }
+
+      // 화살표 표시 조건
+      const arrow = document.getElementById('arrow-left');
+      if (tabName === 'drink2') {
+        arrow.style.display = 'block';
+      } else {
+        arrow.style.display = 'none';
+      }
     };
 
     document.addEventListener("DOMContentLoaded", () => {
-      // 음성 인식 상태 복구
-      if (localStorage.getItem("continueRecognition") === "true") {
-        localStorage.removeItem("continueRecognition");
-        console.log("🔁 order 진입 후 서버에 상태 요청");
-        
-        
-        const disableVoice = localStorage.getItem("disableVoice") === "true";
-        if (!disableVoice) {
-          if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-            socket.send("resume_from_menu");
-          } else {
-            const retryInterval = setInterval(() => {
-              if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-                socket.send("resume_from_menu");
-                clearInterval(retryInterval);
-              }
-            }, 100);
-          }
-        } else {
-          console.log("🚫 disableVoice=true → resume_from_menu 전송 생략");
-          localStorage.removeItem("disableVoice");  // 사용 후 제거
-        }
-      }
+      const defaultButton = document.getElementById("tab-btn-coffee");
+      showTab("coffee", defaultButton);
+    });
+
+
 
       // ☕ 커피 메뉴 → 옵션 팝업 띄움
       document.querySelectorAll('#tab-coffee .menu-item').forEach(item => {
@@ -629,6 +638,7 @@
       priceDiv.innerText = `${unitPrice * quantity}원`;
     };
 
+    
     window.addEventListener("message", function(event) {
       if (event.data.type === "popup-complete") {
         const name = localStorage.getItem("selectedMenu");
@@ -667,7 +677,6 @@
     }
 
 
-    });
 
   </script>
 

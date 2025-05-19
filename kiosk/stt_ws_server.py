@@ -63,7 +63,7 @@ client_states = {}
 
 def is_positive(text):
     text = text.strip().lower()
-    positive_words = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ", "좋습니다", "그렇죠", "네네"]
+    positive_words = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ", "좋습니다", "그렇죠", "네네", "예스", "예쓰", "yes", "응응", "엉"]
 
     # 완전 일치
     if text in positive_words:
@@ -280,12 +280,7 @@ async def get_chatgpt_response(user_input, gpt_messages):
     is_recommend_request = any(k in clean_input(user_input) for k in recommend_keywords)
 
 
-    if not matched_menu and not is_recommend_request:
-        # ✅ 추천 요청이 아니고, 메뉴도 없음 → 차단
-        reply = "죄송합니다. 저희 카페의 메뉴에는 없는 메뉴예요."
-        gpt_messages.append({"role": "user", "content": user_input})
-        gpt_messages.append({"role": "assistant", "content": reply})
-        return reply
+  
 
     # 시스템 프롬프트 생성
     base_prompt = (
@@ -295,8 +290,9 @@ async def get_chatgpt_response(user_input, gpt_messages):
         "이외의 메뉴는 절대 언급하지 마세요. 손님이 메뉴 설명을 요청하면 해당 메뉴를 1문장으로 짧게 설명하고, "
         "추천을 요청하면 2개의 메뉴를 소개하고 각 한 문장씩 소개하세요. 주문은 받지 마세요."
         "맥락없는 소리 (ex: '음', '요' 등)은 무시하고 응답하지 마세요"
-)
-
+        "손님이 우리 카페에 없는 메뉴를 요청하면, 직접적으로 거절하지 말고 메뉴 리스트 안에서 비슷한 것을 친절하게 추천하세요."
+        "손님이 영어로 말하면 너도 영어로 말해."
+    )
 
     if matched_menu:
         system_prompt = (
@@ -449,7 +445,7 @@ async def echo(websocket):
             if state["step"] == "waiting_temp_retry":
                 elapsed = time.time() - state.get("temp_prompt_time", 0)
                 if elapsed >= 4:
-                    response_text = "온도를 다시 말씀해주세요. 핫 또는 아이스로 대답해 주세요."
+                    response_text = "온도를 다시 말씀해주세요. 따듯한 것 또는 차가운 것로 대답해 주세요."
                     state["step"] = "choose_temp"
                     state["last_question"] = response_text
                     await websocket.send("mic_off")
@@ -781,7 +777,7 @@ async def echo(websocket):
                     })
                     if item.category == "디저트":
                         state["cart"].append({"name": item.name, "options": {}, "price": state["price"]})
-                        response_text = f"{item.name} {state['price']}원입니다. 장바구니에 담았습니다. 추가 메뉴 있으신가요?"
+                        response_text = f"{item.name} {state['price']}원입니다. 장바구니에 담았습니다. 추가 메뉴 있으신가요? 네 또는 아니요로 대답해주세요"
                         state.update({"step": "confirm_additional", "menu": None, "options": {}, "price": 0})
                     else:
                         response_text = f"{item.name} {state['price']}원입니다. 옵션 선택을 진행할까요?"
@@ -915,7 +911,7 @@ async def echo(websocket):
                     else:
                         state["options"] = {}
                     state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"]})
-                    response_text = f"기본 옵션으로 {state['menu']}를 장바구니에 담았습니다. 추가로 주문하시겠습니까?"
+                    response_text = f"기본 옵션으로 {state['menu']}를 장바구니에 담았습니다. 추가로 주문하시겠습니까? 네 또는 아니요로 대답해주세요"
                     await websocket.send("mic_off")  # ✅ 시스템 발화 전 마이크 끄기
                     await synthesize_speech(response_text, websocket, activate_mic=True)  # 🔈 TTS 출력 후 띵 소리 + 마이크 재개
                     
@@ -944,7 +940,7 @@ async def echo(websocket):
                     response_text = "샷 추가하시겠습니까?"
                     state["step"] = "ask_shot"
                 else:
-                    response_text = "핫 또는 아이스를 선택해주세요."
+                    response_text = "따듯한 것 또는 차가운 것 중 선택해주세요."
                     state["step"] = "choose_temp"
                     state["last_question"] = response_text 
                     await websocket.send("mic_off")
@@ -954,9 +950,9 @@ async def echo(websocket):
                     continue  
 
             elif state["step"] == "choose_temp":
-                if "아이스" in cleaned_text:
+                if any(t in cleaned_text for t in ["아이스", "차가운", "찬거", "찬 거", "시원한", "시원"]):
                     state["options"]["temp"] = "아이스"
-                elif any(t in cleaned_text for t in ["핫", "하트", "하", "하스", "합"]):
+                elif any(t in cleaned_text for t in ["핫", "하트", "하", "하스", "합", "뜨거운", "따뜻한", "드거운", "다듯한"]):
                     state["options"]["temp"] = "핫"
                 else:
                     # 유효하지 않은 응답 → 재질문 대기 상태로 전환
