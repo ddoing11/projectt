@@ -165,30 +165,30 @@
     // 선택 완료
     function completeSelection() {
       const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
-      const temp = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
+      const hotice = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
 
-      if (!size || !temp) {
+
+      if (!size || !hotice) {
         alert("모든 옵션을 선택해 주세요.");
         return;
       }
 
-      // ✅ 옵션 가격 계산
-      let totalOptionPrice = 0;
-      if (size.includes("크게")) totalOptionPrice += 500;
+      const selections = {
+        size: size,
+        temp: hotice,
+        shot: "없음"
+      };
 
-      const options = `${size}\n${temp}\n샷: 없음`;
+      const name = localStorage.getItem("selectedMenu");
+      const basePrice = parseInt(localStorage.getItem("selectedPrice"));
 
-      // ✅ 가격 포함해서 전달
-      window.parent.postMessage({
-        type: "popup-complete",
-        options: options,
-        extraPrice: totalOptionPrice
-      }, "*");
+      // ✅ 커피 방식과 동일하게 장바구니 함수 호출
+      window.parent.addToCartWithOptions(name, basePrice, selections);
 
-      // 옵션 초기화 후 닫기
-      resetAllOptions();
-      window.parent.document.getElementById("popup-overlay").style.display = "none";
+      const overlay = window.parent.document.getElementById("popup-overlay");
+      if (overlay) overlay.style.display = "none";
     }
+
 
 
     // 돌아가기

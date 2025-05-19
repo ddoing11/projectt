@@ -101,9 +101,9 @@
 
     .arrow-right {
       position: absolute;
-      top: 628px; /* ✅ 세로 정확히 중간 근처 */
-      left: 1530px; /* ✅ 가로 오른쪽 살짝 안쪽 */
-      width: 140px;
+      top: 620px; /* ✅ 세로 정확히 중간 근처 */
+      left: 1520px; /* ✅ 가로 오른쪽 살짝 안쪽 */
+      width: 170px;
       height: auto;
       cursor: pointer;
       z-index: 1000;
@@ -111,7 +111,7 @@
 
     .arrow-left {
       position: absolute;
-      top: 628px;    /* 필요 시 조절 가능 */
+      top: 620px;    /* 필요 시 조절 가능 */
       left: 20px;      /* 화면 왼쪽에 붙이기 */
       width: 140px;
       height: auto;
@@ -402,22 +402,22 @@
 
 
   <div id="tab-tea" class="menu-tab">
-    <div class="menu-item">
+    <div class="menu-item" data-name="히비스커스" data-price="4500" data-image="{% static 'images/히비스커스.png' %}">
       <img src="{% static 'images/히비스커스.png' %}" alt="히비스커스" />
       <div class="name">히비스커스</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="캐모마일" data-price="4500" data-image="{% static 'images/캐모마일.png' %}">
       <img src="{% static 'images/캐모마일.png' %}" alt="캐모마일" />
       <div class="name">캐모마일</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="루이보스" data-price="4500" data-image="{% static 'images/루이보스.png' %}">
       <img src="{% static 'images/루이보스.png' %}" alt="루이보스" />
       <div class="name">루이보스</div>
       <div class="price">4500원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="얼그레이" data-price="4500" data-image="{% static 'images/얼그레이.png' %}">
       <img src="{% static 'images/얼그레이.png' %}" alt="얼그레이" />
       <div class="name">얼그레이</div>
       <div class="price">4500원</div>
@@ -510,6 +510,7 @@
 
           localStorage.setItem('selectedMenu', name);
           localStorage.setItem('selectedPrice', price);
+          localStorage.setItem('selectedCategory', 'coffee');  // ✅ 추가
         });
       });
 
@@ -527,6 +528,7 @@
 
           localStorage.setItem('selectedMenu', name);
           localStorage.setItem('selectedPrice', price);
+          localStorage.setItem('selectedCategory', 'drink');  // ✅ 추가
         });
       });
 
@@ -554,23 +556,6 @@
       
       
 
-
-    document.querySelectorAll('#tab-drink .menu-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const name = item.querySelector('.name').innerText;
-        const priceText = item.querySelector('.price').innerText;
-        const price = parseInt(priceText.replace('원', ''));
-
-        const popup = document.getElementById('popup-overlay');
-        const frame = document.getElementById('popup-frame');
-        frame.src = "/popup/popup_drink/";
-        popup.style.display = 'flex';
-
-        localStorage.setItem('selectedMenu', name);
-        localStorage.setItem('selectedPrice', price);
-      });
-    });
-
     // 🍰 디저트 메뉴 → 옵션 없이 바로 장바구니 추가
     document.querySelectorAll('#tab-dessert .menu-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -595,13 +580,23 @@
 
       const totalPrice = basePrice + extraPrice;
 
+      // ✅ localStorage에서 선택된 카테고리를 가져옴
+      const category = localStorage.getItem("selectedCategory");
+
+
+      // ✅ 옵션 텍스트 조건 분기
+      let optionsText = `${selections.size} ${selections.temp}`;
+      console.log("📦 category:", category);
+      console.log("📦 selections.shot:", selections.shot);
+
+      if (category !== "tea" && selections.shot) {
+        optionsText += ` 샷 ${selections.shot}`;
+      }
+
       const cartItems = document.querySelector(".cart-items");
       const newItem = document.createElement("div");
       newItem.classList.add("cart-item");
 
-
-
-      const optionsText = `${selections.size} ${selections.temp} 샷 ${selections.shot}`;
 
       newItem.innerHTML = `
         <button class="remove-btn" onclick="this.parentElement.remove()">×</button>

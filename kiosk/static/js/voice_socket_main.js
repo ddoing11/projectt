@@ -358,11 +358,23 @@ document.addEventListener("DOMContentLoaded", () => {
   if (payButton) {
     payButton.addEventListener("click", () => {
       const clientId = localStorage.getItem("client_id");
-      if (clientId) {
+      if (!clientId) {
+        alert("client_id가 없습니다. 음성 인식이 초기화되지 않았을 수 있습니다.");
+        return;
+      }
+
+      const path = window.location.pathname;
+      console.log("📄 현재 경로:", path);
+
+      if (path.startsWith("/order2/")) {
+        window.location.href = `/pay_all2?client_id=${clientId}`;
+      } else if (path.startsWith("/order")) {
         window.location.href = `/pay_all?client_id=${clientId}`;
       } else {
-        alert("client_id가 없습니다. 음성 인식이 초기화되지 않았을 수 있습니다.");
+        alert("현재 페이지가 주문 페이지가 아닙니다.");
       }
-    }); // ✅ 이 괄호
-  }      // ✅ 이 괄호
+    });
+  }
+
+
 });    
