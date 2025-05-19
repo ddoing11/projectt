@@ -624,6 +624,11 @@
       cartItems.appendChild(newItem);
       document.getElementById("popup-overlay").style.display = "none";
     };
+      document.querySelector(".pay-button").addEventListener("click", () => {
+        saveCartToLocalStorage();
+        window.location.href = "/pay_all2";
+      });
+
 
     window.changeQuantity = function(button, delta) {
       const quantitySpan = button.parentElement.querySelector(".quantity");
@@ -676,6 +681,22 @@
       cartItems.appendChild(newItem);
     }
 
+    function saveCartToLocalStorage() {
+      const cartItems = document.querySelectorAll('.cart-item');
+      const cartData = [];
+
+      cartItems.forEach(item => {
+        const name = item.querySelector(".menu-name").innerText;
+        const quantity = parseInt(item.querySelector(".quantity").innerText);
+        const options = item.querySelector(".options").innerText;
+        const priceText = item.querySelector(".price").innerText.replace("원", "");
+        const basePrice = parseInt(priceText) / quantity;
+
+        cartData.push({ name, quantity, options, basePrice });
+      });
+
+      localStorage.setItem('cart', JSON.stringify(cartData));
+    }
 
 
   </script>
