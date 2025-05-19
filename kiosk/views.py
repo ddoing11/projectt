@@ -26,6 +26,46 @@ def start(request):
 def order(request):
     return render(request, 'order.html')
 
+def order2(request):
+    return render(request, 'order2.html')
+
+from django.shortcuts import render
+from kiosk.stt_ws_server import client_states
+
+def pay_all(request):
+    client_id = request.GET.get("client_id")
+    print("🔍 받은 client_id:", client_id)
+
+    cart = []
+    for state in client_states.values():
+        print("🧾 현재 상태 client_id:", state.get("client_id"))
+        if str(state.get("client_id")) == str(client_id):
+            cart = state.get("cart", [])
+            print("✅ 장바구니 찾음:", cart)
+            break
+
+    total_price = sum(item["price"] * item["count"] for item in cart)
+
+    return render(request, 'pay_all.html', {
+        "cart": cart,
+        "total_price": total_price
+    })
+
+def menu_coffee(request):
+    return render(request, 'menu_coffee.html')
+
+def menu_drink(request):
+    return render(request, 'menu_drink.html')
+
+def menu_drink2(request):
+    return render(request, 'menu_drink2.html')
+
+def menu_tea(request):
+    return render(request, 'menu_tea.html')
+
+def menu_dessert(request):
+    return render(request, 'menu_dessert.html')
+
 def voice_socket_view(request):
     return render(request, 'voice_socket.html')
 

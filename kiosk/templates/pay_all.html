@@ -147,6 +147,58 @@
       border: none;
       border-radius: 20px;
     }
+
+
+    body {
+      background-color: #fdfaf7;
+      font-family: 'Hakgyoansim', sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    }
+
+    table {
+      width: 90%;
+      margin: 40px auto 20px;
+      border-collapse: collapse;
+      font-size: 1.5rem;
+    }
+
+    th, td {
+      padding: 15px;
+      border-bottom: 1px solid #aaa;
+      text-align: center;
+    }
+
+    th {
+      background-color: #eee;
+    }
+
+    .total {
+      text-align: right;
+      font-weight: bold;
+      font-size: 1.6rem;
+      margin: 40px 5% 20px;
+    }
+
+    .button-area {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .button-area button {
+      font-size: 1.3rem;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 12px;
+      background-color: #5c4033;
+      color: white;
+      cursor: pointer;
+    }
+
+    
   </style>
   <!-- pay_all.html 하단에 추가 -->
   <script src="{% static 'js/voice_socket_main.js' %}"></script>
@@ -177,24 +229,38 @@
 <body>
 
   <div class="top-bar">
-    <button class="home-button" onclick="location.href='start.html'">
+    <button class="home-button" onclick="location.href='/start'">
       <img src="{% static 'images/home_icon.png' %}" alt="Home" class="home-icon">
       <span style="padding-top: 5px;">처음으로</span>
     </button>
     <div class="title">결제하기</div>
   </div>
 
-  <div class="table-header">
-    <div>제품</div>
-    <div>수량</div>
-    <div>가격</div>
-  </div>
-
-  <div class="table-content">
-    <!-- 여기에 제품 목록 들어갈 수 있음 -->
-  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>제품</th>
+        <th>수량</th>
+        <th>가격</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in cart %}
+      <tr>
+        <td>{{ item.name }}</td>
+        <td>{{ item.count }}</td>
+        <td>{{ item.price|floatformat:0 }}원</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
   <div class="total-price">
+    총 금액: {{ total_price|floatformat:0 }}원
+  </div>
+
+
+
     
   </div>
 
@@ -272,12 +338,11 @@
 
 
   <script>
-    function showPopup() {
+      function showPopup() {
       document.getElementById('popup-overlay').style.display = 'flex';
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      // resume 플래그 있으면 서버에 복구 요청
       if (localStorage.getItem("continueRecognition") === "true") {
         localStorage.removeItem("continueRecognition");
         console.log("🔁 pay_all 진입 후 서버에 상태 요청");
@@ -291,6 +356,19 @@
             }
           }, 100);
         }
+      }
+
+      // ✅ 결제 버튼 클릭 시 client_id를 포함한 URL로 이동
+      const payButton = document.querySelector(".pay-button");
+      if (payButton) {
+        payButton.addEventListener("click", () => {
+          const clientId = localStorage.getItem("client_id");
+          if (clientId) {
+            window.location.href = `/pay_all?client_id=${clientId}`;
+          } else {
+            alert("client_id가 없습니다.");
+          }
+        });
       }
     });
   </script> <!-- ✅ 꼭 닫아야 함 -->

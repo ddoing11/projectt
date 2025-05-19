@@ -34,7 +34,10 @@ function createWebSocket() {
     console.warn("⚠️ 이미 연결된 WebSocket 있음. 생략.");
     return;
   }
-  socket = new WebSocket("ws://localhost:8002");
+  socket = new WebSocket("wss://mykiosk8002.jp.ngrok.io");
+
+
+
 
 
 
@@ -158,6 +161,15 @@ function createWebSocket() {
       return;
     }
 
+    if (text === "go_to_order2") {
+      console.log("📢 서버 지시: /order2 페이지로 이동");
+      localStorage.setItem("continueRecognition", "false");  // ❌ 음성인식 비활성화
+      window.location.href = "/order2";
+      return;
+    }
+
+
+
     if (text === "set_resume_flag") {
       console.log("🧭 resume 플래그 설정");
       localStorage.setItem("continueRecognition", "true");
@@ -202,7 +214,7 @@ function createWebSocket() {
 
 
   socket.onerror = (error) => {
-    console.error("❌ WebSocket 오류:", error);
+    console.error("❌ W ebSocket 오류:", error);
   };
 }
 
@@ -342,6 +354,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
-
-});
+  const payButton = document.querySelector(".pay-button");
+  if (payButton) {
+    payButton.addEventListener("click", () => {
+      const clientId = localStorage.getItem("client_id");
+      if (clientId) {
+        window.location.href = `/pay_all?client_id=${clientId}`;
+      } else {
+        alert("client_id가 없습니다. 음성 인식이 초기화되지 않았을 수 있습니다.");
+      }
+    }); // ✅ 이 괄호
+  }      // ✅ 이 괄호
+});    

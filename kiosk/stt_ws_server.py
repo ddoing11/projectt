@@ -478,9 +478,11 @@ async def echo(websocket):
     
             try:
                 data = json.loads(message)
+
                 if data.get("type") == "page_info":
                     client_id = data.get("client_id")
                     path = data.get("path")
+                    state["client_id"] = client_id 
                     state["path"] = path  # ✅ 여기에 경로 저장
                     
                     print(f"📄 클라이언트 페이지 경로: {path}, client_id: {client_id}")
@@ -580,7 +582,8 @@ async def echo(websocket):
                     "menu": None,
                     "options": {},
                     "price": 0,
-                    "category": None
+                    "category": None, 
+                    "count": 1
                 })
                 # ✅ 위의 3단계 코드 삽입
                 await websocket.send("mic_off")
@@ -652,25 +655,34 @@ async def echo(websocket):
             response_text = ""
 
             if state["step"] == "await_start":
-                if is_positive(cleaned_text):
-                    await websocket.send("goto_menu")  # 🚀 먼저 페이지 이동
-                    await asyncio.sleep(0.5)  # 💡 클라이언트 로딩 대기 (필요시 늘릴 수 있음)
 
-                    # 이후 서버가 다시 응답하도록 상태 설정만
-                    state["step"] = "announce_menu_prompt"
+                if is_positive(cleaned_text):
+                    response_text = "음성 주문을 시작합니다. 어떤 메뉴를 원하세요?"
+                    await synthesize_speech(response_text, websocket, activate_mic=False)
+
+                    await asyncio.sleep(0.8)  # TTS 끝난 뒤 약간 대기
+
+                    await websocket.send("goto_menu")  # ✅ 클라이언트가 이미 이걸 처리하도록 되어 있음
+                    state["step"] = "await_menu"
                     continue
 
 
 
-                elif is_negative(cleaned_text):
-                    response_text = "일반 키오스크로 주문을 진행해주세요."
-                    await websocket.send(response_text)
+                elif is_negative(cleaned_text):  # 사용자가 "아니요"라고 응답한 경우
+                    response_text = "일반 키오스크로 진행하세요."
                     await synthesize_speech(response_text, websocket, activate_mic=False)
-                    await websocket.send("set_disable_voice")
-                    await websocket.send("goto_menu") 
 
-                    client_states.pop(websocket)
-                    return
+                    # ✅ 0.5초~1초 대기 후 페이지 이동 신호 전송
+                    await asyncio.sleep(0.7)
+
+                    await websocket.send("set_disable_voice")
+                    await websocket.send("go_to_order2")
+                    print("📤 go_to_order2 메시지 전송됨")
+
+                    state["step"] = "manual_mode"
+                    client_states.pop(websocket, None)
+                    continue
+
 
             elif state["step"] == "await_menu":
                 await ensure_mysql_connection()
@@ -764,7 +776,8 @@ async def echo(websocket):
                         "menu": item.name,
                         "price": int(item.price),
                         "category": item.category,
-                        "options": {}
+                        "options": {},
+                        "count": 1
                     })
                     if item.category == "디저트":
                         state["cart"].append({"name": item.name, "options": {}, "price": state["price"]})
@@ -805,7 +818,9 @@ async def echo(websocket):
                             state["cart"].append({
                                 "name": item["name"],
                                 "options": {},
-                                "price": item["price"]
+                                "price": item["price"], 
+                                "count": 1
+
                             })
                             response_text = f"{item['name']}을 담았습니다. 추가로 주문하시겠습니까?"
                             await websocket.send("mic_off")  # ✅ 여기에 추가
@@ -853,7 +868,8 @@ async def echo(websocket):
                         state["cart"].append({
                             "name": state["menu"],
                             "options": {},
-                            "price": state["price"]
+                            "price": state["price"],
+                            "count": 1
                         })
                         response_text = f"{state['menu']}을 담았습니다. 추가로 주문하시겠습니까?"
                         await websocket.send("mic_off")  # ✅ 여기에 추가
@@ -1158,6 +1174,7 @@ async def echo(websocket):
                             "cart": [],
                             "finalized": False,
                             "first_order_done": False
+        
                         })
                     continue
 

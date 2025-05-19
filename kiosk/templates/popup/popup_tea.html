@@ -26,47 +26,49 @@
     }
 
     .popup {
-      width: 700px;
+      width: 1315px;
+      height: 1282px;
       background-color: white;
-      border-radius: 12px;
-      padding: 50px 60px;
+      border-radius: 20px;
+      padding: 80px;
       box-sizing: border-box;
+      font-family: 'BMDoHyeon', sans-serif;
     }
 
     .popup h2 {
       text-align: center;
-      font-size: 36px;
-      font-family: 'BMDoHyeon', sans-serif;
-      margin-bottom: 20px;
+      font-size: 52px;
+      font-weight: bold;
+      margin-bottom: 40px;
     }
 
     .divider {
       height: 2px;
       background-color: #999;
-      margin: 20px 0;
+      margin: 40px 0;
     }
 
     .section {
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
 
     .section-title {
-      font-size: 28px;
+      font-size: 42px;
       font-family: 'BMDoHyeon', sans-serif;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .option-group {
       display: flex;
-      gap: 20px;
+      gap: 40px;
     }
 
     .option-button {
       font-family: 'Hakgyoansim', sans-serif;
-      font-size: 24px;
-      padding: 12px 24px;
+      font-size: 36px;
+      padding: 20px 40px;
       border: 2px solid #5c4033;
-      border-radius: 8px;
+      border-radius: 10px;
       background-color: white;
       color: #000;
       cursor: pointer;
@@ -85,17 +87,37 @@
       color: blue;
     }
 
-    .complete-button {
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 340px;
+    }
+
+    .complete-button, .back-button {
       font-family: 'Hakgyoansim', sans-serif;
-      font-size: 28px;
+      font-size: 40px;
       background-color: #5c4033;
       color: white;
       border: none;
-      padding: 20px 60px;
-      border-radius: 30px;
-      display: block;
-      margin: 50px auto 0;
+      padding: 30px 100px;
+      border-radius: 50px;
       cursor: pointer;
+    }
+
+    button {
+      transition: all 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(1.15);
+    }
+
+    .option-button:active,
+    .complete-button:active,
+    .back-button:active {
+      transform: translateY(4px);
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
     }
   </style>
 </head>
@@ -108,7 +130,7 @@
       <div class="section-title">사이즈 선택</div>
       <div class="option-group" id="size-options">
         <button class="option-button" data-group="size">보통</button>
-        <button class="option-button" data-group="size">크게 (+ 500원)</button>
+        <button class="option-button" data-group="size">크게 (+500원)</button>
       </div>
     </div>
 
@@ -122,10 +144,14 @@
       </div>
     </div>
 
-    <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+    <div class="button-row">
+      <button class="back-button" onclick="goBack()">돌아가기</button>
+      <button class="complete-button" onclick="completeSelection()">선택 완료</button>
+    </div>
   </div>
 
   <script>
+    // 옵션 선택 토글
     document.querySelectorAll(".option-button").forEach(button => {
       button.addEventListener("click", () => {
         const group = button.getAttribute("data-group");
@@ -136,6 +162,7 @@
       });
     });
 
+    // 선택 완료
     function completeSelection() {
       const size = document.querySelector(".option-button[data-group='size'].selected")?.innerText;
       const temp = document.querySelector(".option-button[data-group='hotice'].selected")?.innerText;
@@ -145,21 +172,47 @@
         return;
       }
 
-      const menu = localStorage.getItem("selectedMenu");
-      const basePrice = parseInt(localStorage.getItem("selectedPrice"));
+      // ✅ 옵션 가격 계산
+      let totalOptionPrice = 0;
+      if (size.includes("크게")) totalOptionPrice += 500;
 
-      const selections = {
-        size: size,
-        temp: temp,
-        shot: "없음"
-      };
+      const options = `${size}\n${temp}\n샷: 없음`;
 
-      // ✅ 부모 창 함수 호출해서 장바구니 추가
-      if (window.parent && typeof window.parent.addToCartWithOptions === 'function') {
-        window.parent.addToCartWithOptions(menu, basePrice, selections);
-      }
+      // ✅ 가격 포함해서 전달
+      window.parent.postMessage({
+        type: "popup-complete",
+        options: options,
+        extraPrice: totalOptionPrice
+      }, "*");
+
+      // 옵션 초기화 후 닫기
+      resetAllOptions();
+      window.parent.document.getElementById("popup-overlay").style.display = "none";
     }
-  </script>
 
+
+    // 돌아가기
+    function goBack() {
+      resetAllOptions();
+      window.parent.document.getElementById("popup-overlay").style.display = "none";
+    }
+
+    // 옵션 초기화
+    function resetAllOptions() {
+      document.querySelectorAll(".option-button").forEach(btn => {
+        btn.classList.remove("selected");
+      });
+    }
+
+    // 페이지 로드 시 초기화
+    window.addEventListener("DOMContentLoaded", resetAllOptions);
+
+    // 부모로부터 초기화 메시지 받기
+    window.addEventListener("message", function (event) {
+      if (event.data.type === "reset-options") {
+        resetAllOptions();
+      }
+    });
+  </script>
 </body>
 </html>

@@ -21,8 +21,8 @@
       margin: 0;
       padding: 0;
       width: 1640px;
-      height: 2360px;
-      background-color: #fdfaf7;
+      height: 2360px; 
+      background-color: #fdf7f7;;
       font-family: 'Hakgyoansim', sans-serif;
       overflow: hidden;
     }
@@ -33,13 +33,21 @@
       align-items: center;
       padding: 40px 80px 20px;
       border-bottom: 2px solid #999;
+      position: relative;
     }
+
 
     .top-bar-title {
       font-size: 60px;
-      font-weight: bold;
       font-family: 'DalseoDarling', cursive;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: bold;
+      width: 300px; /* ⭐ 고정폭 추가 */
+      text-align: center; /* ⭐ 글자 중앙정렬 */
     }
+
 
     .home-button {
       background-color: #eceae7;
@@ -51,6 +59,7 @@
       gap: 10px;
       cursor: pointer;
     }
+
 
     .home-button img {
       width: 60px;
@@ -92,13 +101,24 @@
 
     .arrow-right {
       position: absolute;
-      top: 600px;            /* 딱 카드 중앙 높이 맞춤 */
-      right: 0px;            /* 오른쪽 끝에서 조금 띄움 */
-      width: 150px;            /* 이미지 크기 */
+      top: 628px; /* ✅ 세로 정확히 중간 근처 */
+      left: 1530px; /* ✅ 가로 오른쪽 살짝 안쪽 */
+      width: 140px;
       height: auto;
       cursor: pointer;
-      z-index: 10;
+      z-index: 1000;
     }
+
+    .arrow-left {
+      position: absolute;
+      top: 628px;    /* 필요 시 조절 가능 */
+      left: 20px;      /* 화면 왼쪽에 붙이기 */
+      width: 140px;
+      height: auto;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
 
     
  
@@ -166,6 +186,7 @@
       width: 100%;
     }
 
+
     .cart-items {
       display: flex;
       gap: 30px;
@@ -174,23 +195,31 @@
       padding-top: 10px;
     }
 
+
     .cart-item {
+      position: relative;
       min-width: 240px;
+      max-width: 240px;
       border-right: 2px solid #ccc;
       padding: 15px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
+
 
     .cart-item img {
       height: 120px;
     }
 
+
     .pay-button {
       background: #5c4033;
       color: white;
       font-size: 36px;
-      padding: 100px 40px;
-      border-radius: 10px;
+      padding: 135px 35px;
+      border-radius: 15px;
       font-family: 'Hakgyoansim', sans-serif;
       margin-left: 30px;
       white-space: nowrap;
@@ -202,6 +231,58 @@
       background-color: #4a2f14;
       transform: scale(1.05);
     }
+
+    .price {
+      font-size: 28px;
+    }
+    .cart-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      word-break: break-word;
+    }
+
+    .options {
+      font-size: 28px;
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .quantity-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 24px;
+      border: none;
+      background-color: #5c4033;
+      color: white;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 2px; /* ← 구분선에 붙도록 조정 */
+      font-size: 50px;
+      background: none;
+      border: none;
+      color: red;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      z-index: 10; /* 혹시 겹칠 요소 대비 */
+    }
+
+    .remove-btn:hover {
+      color: darkred;
+    }
+
+
 
     #popup-overlay {
       display: none;
@@ -242,80 +323,81 @@
   </div>
 
   <div id="tab-coffee" class="menu-tab active">
-    <div class="menu-item">
+    <div class="menu-item" data-name="아메리카노" data-price="2000" data-image="{% static 'images/americano.png' %}">
       <img src="{% static 'images/americano.png' %}" alt="아메리카노" />
       <div class="name">아메리카노</div>
       <div class="price">2000원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="카페 라떼" data-price="2500" data-image="{% static 'images/latte.png' %}">
       <img src="{% static 'images/latte.png' %}" alt="카페 라떼" />
       <div class="name">카페 라떼</div>
       <div class="price">2500원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="토피넛 라떼" data-price="4800" data-image="{% static 'images/toffee.png' %}">
       <img src="{% static 'images/toffee.png' %}" alt="토피넛 라떼" />
       <div class="name">토피넛 라떼</div>
       <div class="price">4800원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="달고나 라떼" data-price="4800" data-image="{% static 'images/dalcona.png' %}">
       <img src="{% static 'images/dalcona.png' %}" alt="달고나 라떼" />
       <div class="name">달고나 라떼</div>
       <div class="price">4800원</div>
     </div>
-    
   </div>
 
+
   <div id="tab-drink" class="menu-tab">
-    <div class="menu-item">
+    <div class="menu-item" data-name="초코 라떼" data-price="5200" data-image="{% static 'images/초코라떼.png' %}">
       <img src="{% static 'images/초코라떼.png' %}" alt="초코라떼">
       <div class="name">초코 라떼</div>
       <div class="price">5200원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="녹차 라떼" data-price="5200" data-image="{% static 'images/녹차라떼.png' %}">
       <img src="{% static 'images/녹차라떼.png' %}" alt="녹차라떼">
       <div class="name">녹차 라떼</div>
       <div class="price">5200원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="딸기 라떼" data-price="5400" data-image="{% static 'images/딸기라떼.png' %}">
       <img src="{% static 'images/딸기라떼.png' %}" alt="딸기라떼">
       <div class="name">딸기 라떼</div>
       <div class="price">5400원</div>
     </div>
-    <div class="menu-item">
+    <div class="menu-item" data-name="요거트 스무디" data-price="5500" data-image="{% static 'images/요거트스무디.png' %}">
       <img src="{% static 'images/요거트스무디.png' %}" alt="요거트스무디">
       <div class="name">요거트 스무디</div>
       <div class="price">5500원</div>
     </div>
-    <img class="arrow-right" src="{% static 'images/arrow_right.png' %}" alt="다음" onclick="showTab('drink2', this)" />
-  </div>
-</div>
+    <!-- 오른쪽 화살표 이미지 -->
+    <img src="{% static 'images/arrow_right.png' %}" class="arrow-right" onclick="showTab('drink2', this)" />
 
 
-<div id="tab-drink2" class="menu-tab">
-  <div class="menu-item">
-    <img src="{% static 'images/아이스티.png' %}" alt="아이스티">
-    <div class="name">아이스티</div>
-    <div class="price">3800원</div>
-  </div>
-  <div class="menu-item">
-    <img src="{% static 'images/아샷추.png' %}" alt="아샷추">
-    <div class="name">아샷추</div>
-    <div class="price">4200원</div>
-  </div>
-  <div class="menu-item">
-    <img src="{% static 'images/레몬에이드.png' %}" alt="레몬 에이드">
-    <div class="name">레몬 에이드</div>
-    <div class="price">4200원</div>
-  </div>
-  <div class="menu-item">
-    <img src="{% static 'images/자몽에이드.png' %}" alt="자몽 에이드">
-    <div class="name">자몽 에이드</div>
-    <div class="price">4200원</div>
   </div>
 
-  <!-- 왼쪽 화살표로 이전 탭(drink)으로 이동 -->
-  <img class="arrow-right" style="left: 0; right: auto; transform: rotate(180deg);" src="{% static 'images/arrow_right.png' %}" alt="이전" onclick="showTab('drink', this)" />
-</div>
+
+  <div id="tab-drink2" class="menu-tab">
+    <div class="menu-item" data-name="아이스티" data-price="3800" data-image="{% static 'images/아이스티 (1).png' %}">
+      <img src="{% static 'images/아이스티.png' %}" alt="아이스티">
+      <div class="name">아이스티</div>
+      <div class="price">3800원</div>
+    </div>
+    <div class="menu-item" data-name="아샷추" data-price="4200" data-image="{% static 'images/아샷추 (1).png' %}">
+      <img src="{% static 'images/아샷추.png' %}" alt="아샷추">
+      <div class="name">아샷추</div>
+      <div class="price">4200원</div>
+    </div>
+    <div class="menu-item" data-name="레몬 에이드" data-price="4200" data-image="{% static 'images/레몬에이드 (1).png' %}">
+      <img src="{% static 'images/레몬에이드.png' %}" alt="레몬에이드">
+      <div class="name">레몬 에이드</div>
+      <div class="price">4200원</div>
+    </div>
+    <div class="menu-item" data-name="자몽 에이드" data-price="4200" data-image="{% static 'images/자몽에이드 (1).png' %}">
+      <img src="{% static 'images/자몽에이드.png' %}" alt="자몽 에이드">
+      <div class="name">자몽 에이드</div>
+      <div class="price">4200원</div>
+    </div>
+    <img src="{% static 'images/arrow_left.png' %}" class="arrow-left" onclick="showTab('drink', this)" />
+
+  </div>
 
 
 
@@ -367,7 +449,13 @@
   </div>
 
 
-  
+  <div class="bottom-box">
+    <div class="title">선택한 메뉴</div>
+    <div class="middle-line"></div>
+    <div class="cart-lineup">
+      <div class="cart-items"></div>
+      <button class="pay-button">결제하기</button>
+    </div>
   </div>
 
   <div id="popup-overlay">
@@ -375,12 +463,13 @@
   </div>
 
   <script>
-    function showTab(category, button) {
+    
+    window.showTab = function(category, button) {
       document.querySelectorAll('.menu-tab').forEach(tab => tab.classList.remove('active'));
       document.querySelector(`#tab-${category}`).classList.add('active');
       document.querySelectorAll('.tab-menu button').forEach(btn => btn.classList.remove('active'));
       button.classList.add('active');
-    }
+    };
 
     document.addEventListener("DOMContentLoaded", () => {
       // 음성 인식 상태 복구
@@ -493,6 +582,10 @@
       });
     });
 
+    
+
+    
+    
     window.addToCartWithOptions = function(name, basePrice, selections) {
       let extraPrice = 0;
 
@@ -506,24 +599,51 @@
       const newItem = document.createElement("div");
       newItem.classList.add("cart-item");
 
-      // ✅ static 경로를 문자열로 만든 다음 JS에서 이미지 경로 붙이기
-      const staticPath = "{% static 'images/' %}";
-      const filename = name.replace(/\s/g, "") + ".png"; // 공백 제거
-      const imagePath = staticPath + filename;
+
+
+      const optionsText = `${selections.size} ${selections.temp} 샷 ${selections.shot}`;
 
       newItem.innerHTML = `
-        <img src="${imagePath}" alt="${name}">
-        <div style="font-size: 34px;">${name}</div>
-        <div style="font-size: 28px;">
-          ${selections.size}, ${selections.temp}, ${selections.shot}
+        <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
+        <div class="cart-info">
+          <div class="menu-name" style="font-size: 38px; font-weight: bold; text-align: center;">${name}</div>
+          <div class="options" style="margin-top: 5px;">${optionsText}</div>
+          <div class="quantity-control" style="margin-top: 10px;">
+            <button class="quantity-btn" onclick="changeQuantity(this, -1)">-</button>
+            <span class="quantity">1</span>
+            <button class="quantity-btn" onclick="changeQuantity(this, 1)">+</button>
+          </div>
+          <div class="price" style="margin-top: 5px;">${totalPrice}원</div>
         </div>
-        <div><span style="font-size: 34px;">${totalPrice}원</span></div>
       `;
-      cartItems.appendChild(newItem);
 
-      // ✅ 팝업 닫기
+      cartItems.appendChild(newItem);
       document.getElementById("popup-overlay").style.display = "none";
     };
+
+    window.changeQuantity = function(button, delta) {
+      const quantitySpan = button.parentElement.querySelector(".quantity");
+      let quantity = parseInt(quantitySpan.innerText);
+      quantity += delta;
+      if (quantity < 1) quantity = 1;
+      quantitySpan.innerText = quantity;
+
+      const priceDiv = button.closest(".cart-info").querySelector(".price");
+      const totalPrice = parseInt(priceDiv.innerText.replace("원", ""));
+      const unitPrice = Math.floor(totalPrice / (quantity - delta));
+      priceDiv.innerText = `${unitPrice * quantity}원`;
+    };
+
+    window.addEventListener("message", function(event) {
+      if (event.data.type === "popup-complete") {
+        const name = localStorage.getItem("selectedMenu");
+        const basePrice = parseInt(localStorage.getItem("selectedPrice"));
+
+        window.addToCartWithOptions(name, basePrice, event.data.options);
+      }
+    });
+
+
 
 
 
@@ -534,9 +654,19 @@
       const cartItems = document.querySelector(".cart-items");
       const newItem = document.createElement("div");
       newItem.classList.add("cart-item");
+
       newItem.innerHTML = `
-        <img src="/static/images/${name}.png" alt="${name}">
-        <div><span style="font-size: 34px;">${price}원</span></div>
+        <button class="remove-btn" onclick="this.parentElement.remove()">×</button>
+        <div class="cart-info">
+          <div class="menu-name" style="font-size: 40px; font-weight: bold;">${name}</div>
+          <div class="options">기본 구성</div>
+          <div class="quantity-control">
+            <button class="quantity-btn" onclick="changeQuantity(this, -1)">-</button>
+            <span class="quantity">1</span>
+            <button class="quantity-btn" onclick="changeQuantity(this, 1)">+</button>
+          </div>
+          <div class="price">${price}원</div>
+        </div>
       `;
       cartItems.appendChild(newItem);
     }
