@@ -236,6 +236,10 @@ transform: scale(1.10);
 <div>가격</div>
 </div>
 
+<!-- pay_all.html 또는 order2.html -->
+<div id="cart-summary" style="display:none; font-size: 36px; white-space: pre-line; margin-top: 30px;"></div>
+
+
 <div class="table-content" id="cart-items"></div>
 
 <div class="total-price" id="total-price">
@@ -314,5 +318,6 @@ function loadCartForPayment() {
 window.onload = loadCartForPayment;
 </script>
 
+<script src="{% static 'js/voice_socket_main.js' %}"></script>
 </body>
 </html>

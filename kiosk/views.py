@@ -38,18 +38,32 @@ def pay_all(request):
 
     cart = []
     for state in client_states.values():
-        print("🧾 현재 상태 client_id:", state.get("client_id"))
         if str(state.get("client_id")) == str(client_id):
             cart = state.get("cart", [])
-            print("✅ 장바구니 찾음:", cart)
             break
 
     total_price = sum(item["price"] * item["count"] for item in cart)
 
+    # ✅ cart_text 포맷: 정렬된 텍스트 형태로
+    lines = []
+    for item in cart:
+        name = item["name"]
+        count = item["count"]
+        price = item["price"] * count
+        lines.append(f"{name:<10} {count}개   {price:>6,}원")
+    cart_text = "\n".join(lines)
+
     return render(request, 'pay_all.html', {
         "cart": cart,
-        "total_price": total_price
+        "total_price": total_price,
+        "cart_text": cart_text  # ✅ HTML에서 {{ cart_text }}로 출력됨
     })
+
+
+
+def pay_all2(request):
+    return render(request, 'pay_all2.html')
+
 
 def menu_coffee(request):
     return render(request, 'menu_coffee.html')
@@ -69,6 +83,56 @@ def menu_dessert(request):
 def voice_socket_view(request):
     return render(request, 'voice_socket.html')
 
+from kiosk import stt_ws_server
+
+
+
+def pay_all_view(request):
+    client_id = request.GET.get("client_id")
+    state = stt_ws_server.client_sessions.get(client_id)
+
+    cart_items = []
+    total_price = 0
+    lines = []
+
+    if state:
+        for item in state.get("cart", []):
+            name = item["name"]
+            count = item.get("count", 1)
+            price = int(item["price"])
+            total = price * count
+
+            # 장바구니용 데이터 저장
+            cart_items.append({
+                "name": name,
+                "count": count,
+                "price": price,
+            })
+
+            total_price += total
+
+            # 줄 정렬된 텍스트 줄 추가 (예: 아메리카노     1개    2,000원)
+            lines.append(f"{name:<10} {str(count)+'개':<6} {total:>6,}원")
+
+    # 최종 텍스트로 변환
+    cart_text = "\n".join(lines)
+    cart_text += f"\n\n총 결제 금액은 {int(total_price):,}원입니다."
+
+    return render(request, 'pay_all.html', {
+        "cart": cart_items,
+        "total_price": total_price,
+        "cart_text": cart_text
+    })
+
+
+def make_cart_summary(cart, total):
+    lines = []
+    for item in cart:
+        lines.append(f"- {item['name']}  {item['count']}개에 {int(item['price'])}원")
+    lines.append(f"총 결제 금액은 {int(total)}원입니다.")
+    return "\n".join(lines)
+
+
 def popup_coffee(request):
     return render(request, 'popup/popup_coffee.html')
 
@@ -80,8 +144,6 @@ def popup_tea(request):
     return render(request, 'popup/popup_tea.html')
 
 
-def pay_all(request):
-    return render(request, 'pay_all.html')
 
 def done(request):
     return render(request, 'done.html') 

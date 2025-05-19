@@ -223,6 +223,43 @@
       }
     }
   }
+
+  function showPopup() {
+    document.getElementById('popup-overlay').style.display = 'flex';
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    
+
+    // 🔁 WebSocket 재연결
+    if (localStorage.getItem("continueRecognition") === "true") {
+      localStorage.removeItem("continueRecognition");
+      console.log("🔁 pay_all 진입 후 서버에 상태 요청");
+      if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+        socket.send("resume_from_pay");
+      } else {
+        const retryInterval = setInterval(() => {
+          if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+            socket.send("resume_from_pay");
+            clearInterval(retryInterval);
+          }
+        }, 100);
+      }
+    }
+
+    // 🧾 결제 버튼이 client_id 포함된 URL로 이동
+    const payButton = document.querySelector(".pay-button");
+    if (payButton) {
+      payButton.addEventListener("click", () => {
+        const clientId = localStorage.getItem("client_id");
+        if (clientId) {
+          window.location.href = `/pay_all?client_id=${clientId}`;
+        } else {
+          alert("client_id가 없습니다.");
+        }
+      });
+    }
+  });
 </script>
 
 
@@ -236,24 +273,17 @@
     <div class="title">결제하기</div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>제품</th>
-        <th>수량</th>
-        <th>가격</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in cart %}
-      <tr>
-        <td>{{ item.name }}</td>
-        <td>{{ item.count }}</td>
-        <td>{{ item.price|floatformat:0 }}원</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-header">
+    <div>제품</div>
+    <div>수량</div>
+    <div>가격</div>
+  </div>
+
+
+
+  <div id="cart-items" class="table-content" style="font-size: 48px;"></div>
+
+
 
   <div class="total-price">
     총 금액: {{ total_price|floatformat:0 }}원
@@ -264,9 +294,7 @@
     
   </div>
 
-  <div class="buttons">
-    <button class="btn" onclick="history.back()">돌아가기</button>
-    <button class="btn" onclick="showPopup()">결제하기</button>
+
   </div>
 
   <!-- 팝업 오버레이 -->

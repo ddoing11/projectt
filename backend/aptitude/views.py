@@ -29,24 +29,32 @@ def order2(request):
 
 from django.shortcuts import render
 
-def pay_all(request):
+# views.py
+def pay_all_view(request):
     client_id = request.GET.get("client_id")
-    print("📦 client_id:", client_id)
+    state = stt_ws_server.client_sessions.get(client_id)
 
-    cart = []
-    for state in client_states.values():
-        if state.get("client_id") == client_id:
-            cart = state.get("cart", [])
-            break
 
-    print("🧾 가져온 cart:", cart)
+    cart_items = []
+    total_price = 0
 
-    total_price = sum(item["price"] * item["count"] for item in cart)
+    if state:
+        for item in state.get("cart", []):
+            cart_items.append({
+                "name": item["name"],
+                "count": item.get("count", 1),
+                "price": int(item["price"]),
+            })
+            total_price += float(item["total_price"])
 
     return render(request, 'pay_all.html', {
-        'cart': cart,
-        'total_price': total_price
+        "cart": cart_items,
+        "total_price": total_price,
     })
+
+
+def pay_all2(request):
+    return render(request, 'pay_all2.html')
 
 
 def menu_coffee(request):
@@ -74,8 +82,6 @@ def popup_tea(request):
     print("🧪 popup_tea view 호출됨")
     return render(request, 'popup/popup_tea.html')
 
-def pay_all(request):
-    return render(request, 'pay_all.html')
 
 
 def done(request):

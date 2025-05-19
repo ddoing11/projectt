@@ -17,8 +17,11 @@ urlpatterns = [
     path('voice_socket/', views.voice_socket_dummy, name='voice_socket'),
     path("popup/popup_drink/", views.popup_drink, name='popup_drink'),
     path("popup/popup_tea/", views.popup_tea, name='popup_tea'),
-    path('pay_all', views.pay_all, name='pay_all'),
+
+    path('pay_all2', views.pay_all2, name='pay_all2'),
     path('done/', views.done, name='done'),
+    path('pay_all', views.pay_all_view, name='pay_all'),
+
     path('menu/coffee/', views.menu_coffee, name='menu_coffee'),
     path('menu/drink/', views.menu_drink, name='menu_drink'),
     path('menu/tea/', views.menu_tea, name='menu_tea'),

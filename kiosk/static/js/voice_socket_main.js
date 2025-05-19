@@ -77,6 +77,32 @@ function createWebSocket() {
 
 
   socket.onmessage = (event) => {
+    // 💬 cart_summary JSON 처리 먼저 시도
+
+    console.log("📥 WebSocket 메시지 수신:", event.data);  // ✅ 추가
+    try {
+      const parsed = JSON.parse(event.data);  // 🔧 이 한 줄이 반드시 있어야 함!
+
+      if (parsed.type === "cart_items") {
+        const items = parsed.items || [];
+        const tableContent = document.getElementById("cart-items");
+        if (tableContent) {
+          tableContent.innerHTML = items.map(item => `
+            <div style="display: flex; justify-content: space-around; padding: 30px 80px; font-size: 42px;">
+              <div style="width: 33%; text-align: center;">${item.name}</div>
+              <div style="width: 33%; text-align: center;">${item.count}</div>
+              <div style="width: 33%; text-align: center;">${Number(item.price).toLocaleString()}원</div>
+            </div>
+          `).join('');
+          console.log("🧾 장바구니 항목 렌더링 완료:", items);
+        }
+        return;
+      }
+    } catch (e) {
+      console.warn("⚠️ JSON 파싱 실패. 일반 메시지 처리 시도:", event.data);
+    }
+
+    
     const text = event.data.trim();
     console.log('📩 서버 응답:', text);
 
@@ -156,15 +182,20 @@ function createWebSocket() {
     }
 
     if (text === "go_to_pay") {
-      console.log("📢 서버 지시: /pay_all 페이지로 이동");
-      location.assign("/pay_all");
+      const clientId = localStorage.getItem("client_id");
+      if (clientId) {
+        console.log("📢 서버 지시: /pay_all 페이지로 이동");
+        location.assign(`/pay_all?client_id=${clientId}`);
+      } else {
+        console.warn("❌ client_id가 없습니다. 이동 취소");
+      }
       return;
     }
 
     if (text === "go_to_order2") {
       console.log("📢 서버 지시: /order2 페이지로 이동");
       localStorage.setItem("continueRecognition", "false");  // ❌ 음성인식 비활성화
-      window.location.href = "/order2";
+      window.location.href = "/order2/";
       return;
     }
 

@@ -63,7 +63,7 @@ client_states = {}
 
 def is_positive(text):
     text = text.strip().lower()
-    positive_words = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ", "좋습니다", "그렇죠", "네네", "예스", "예쓰", "yes", "응응", "엉"]
+    positive_words = ["네", "응", "예", "그래", "좋아", "오케이", "웅", "ㅇㅇ", "좋습니다", "그렇죠", "네네", "예스", "예쓰", "yes", "응응", "엉", "근데", "에", "이때"]
 
     # 완전 일치
     if text in positive_words:
@@ -149,7 +149,7 @@ def clean_input(text):
     question_prefixes = [
         "음성으로주문하시겠습니까", "음성주문을시작합니다", "어떤메뉴를원하세요",
         "다시메뉴를말씀해주세요", "다시말씀해주세요",
-        "같은옵션으로주문할까요", "옵션을진행할까요", "아메리카노다시주문하시겠어요",
+        "같은옵션으로주문할까요", "옵션을진행할까요", "아메리카노다시주문하시겠어요", "사 추가하시겠습니까?",
         "같은옵션으로주문할까요네또는아니요로말씀해주세요",  # 완전한 문장도 포함
         "옵션을진행할까요네또는아니요로말씀해주세요", "4 추가하시겠습니다 ", "동일한 옵션으로 하나 더 담을까요", "추가 주문 여부를 다시 말씀해 주세요", "메뉴 있으신가요", "음성으로주문하시겠습니다", "차 추가하시겠습니까", "사추가여부를다시", "사추가 여부를 다시 말씀해 주세요", "사 추가하시겠습니다", "큰 사이즈는 500원이 추가됩니다", "2,500원입니다", "어떤 메뉴를 원하세요", "간단한 식사 대용으로도 좋습니다", "큰 사이즈는 500원이 추가됩니다", "결제를 진행할까요", "결제를 진행할까요?", "있으신가요"
     ]
@@ -391,15 +391,33 @@ async def echo(websocket):
 
                     summary = "주문 내역입니다:\n"
                     total = 0
-                    for item in counter.values():
-                        summary += f"- {item['name']} {item['options']}  {item['count']}개에 {item['total_price']}원\n"
-                        total += item["total_price"]
+                    
+                    for item in state.get("cart", []):
+                        options = item.get("options", "")
+                        count = item.get("count", 1)
+                        name = item.get("name", "")
+                        total_price = item.get("total_price", 0)
+
+                        summary += f"- {name} {options} {count}개에 {total_price}원\n"
+                        total += total_price
 
                     final_prompt = f"{summary.strip()}\n총 결제 금액은 {total}원입니다.\n결제를 진행할까요? 네 또는 아니요로 말씀해주세요."
+
+
+                    print("📤 cart_summary 텍스트 전송 중:", final_prompt)
+                    await websocket.send(json.dumps({
+                        "type": "cart_summary",
+                        "text": final_prompt
+                    }))
+                    print("📤 cart_summary 전송 완료:", final_prompt)
 
                     state["step"] = "confirm_payment"
                     state["last_question"] = final_prompt
                     state["cart_summary"] = final_prompt
+
+                    
+
+
 
                     await websocket.send("go_to_pay")
                     await websocket.send("mic_off")
@@ -470,6 +488,29 @@ async def echo(websocket):
                     print("🔁 클라이언트로부터 mic_on 요청 수신 → 전송")
                     await websocket.send("mic_on")
                 continue
+
+            elif message == "read_cart":
+                print("📥 read_cart 요청 수신됨")
+
+                items = []
+                total = 0
+
+                for item in state.get("cart", []):  # ✅ cart에서 바로 꺼냄
+                    name = item.get("name")
+                    price = item.get("total_price", 0)
+                    count = item.get("count", 1)  # ✅ count 없으면 기본값 1로
+                    total += price
+                    items.append({
+                        "name": name,
+                        "count": count,
+                        "price": price
+                    })
+
+                await websocket.send(json.dumps({
+                    "type": "cart_items",
+                    "items": items
+                }, default=str))
+                print("📤 cart_items 전송 완료:", items)
 
     
             try:
@@ -672,10 +713,11 @@ async def echo(websocket):
                     await asyncio.sleep(0.7)
 
                     await websocket.send("set_disable_voice")
+                    await asyncio.sleep(0.1)
                     await websocket.send("go_to_order2")
                     print("📤 go_to_order2 메시지 전송됨")
 
-                    state["step"] = "manual_mode"
+              
                     client_states.pop(websocket, None)
                     continue
 
@@ -776,7 +818,7 @@ async def echo(websocket):
                         "count": 1
                     })
                     if item.category == "디저트":
-                        state["cart"].append({"name": item.name, "options": {}, "price": state["price"]})
+                        state["cart"].append({"name": item.name, "options": {}, "price": state["price"], "total_price": item.price})
                         response_text = f"{item.name} {state['price']}원입니다. 장바구니에 담았습니다. 추가 메뉴 있으신가요? 네 또는 아니요로 대답해주세요"
                         state.update({"step": "confirm_additional", "menu": None, "options": {}, "price": 0})
                     else:
@@ -815,6 +857,7 @@ async def echo(websocket):
                                 "name": item["name"],
                                 "options": {},
                                 "price": item["price"], 
+                                "total_price": item.price,
                                 "count": 1
 
                             })
@@ -828,6 +871,7 @@ async def echo(websocket):
                             state["cart"].append({
                                 "name": item["name"],
                                 "options": item["options"].copy(),
+                                "total_price": item.price,
                                 "price": item["price"]
                             })
                             response_text = f"{item['name']}을(를) 동일한 옵션으로 하나 더 담았습니다. 추가로 주문하시겠습니까?"
@@ -865,6 +909,7 @@ async def echo(websocket):
                             "name": state["menu"],
                             "options": {},
                             "price": state["price"],
+                            "total_price": item.price,
                             "count": 1
                         })
                         response_text = f"{state['menu']}을 담았습니다. 추가로 주문하시겠습니까?"
@@ -910,7 +955,7 @@ async def echo(websocket):
                         state["options"] = {"size": "보통", "temp": "아이스"}
                     else:
                         state["options"] = {}
-                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"]})
+                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"], "total_price": item.price})
                     response_text = f"기본 옵션으로 {state['menu']}를 장바구니에 담았습니다. 추가로 주문하시겠습니까? 네 또는 아니요로 대답해주세요"
                     await websocket.send("mic_off")  # ✅ 시스템 발화 전 마이크 끄기
                     await synthesize_speech(response_text, websocket, activate_mic=True)  # 🔈 TTS 출력 후 띵 소리 + 마이크 재개
@@ -952,7 +997,7 @@ async def echo(websocket):
             elif state["step"] == "choose_temp":
                 if any(t in cleaned_text for t in ["아이스", "차가운", "찬거", "찬 거", "시원한", "시원"]):
                     state["options"]["temp"] = "아이스"
-                elif any(t in cleaned_text for t in ["핫", "하트", "하", "하스", "합", "뜨거운", "따뜻한", "드거운", "다듯한"]):
+                elif any(t in cleaned_text for t in ["핫", "하트", "하", "하스", "합", "뜨거운", "따뜻한", "드거운", "다듯한", ]):
                     state["options"]["temp"] = "핫"
                 else:
                     # 유효하지 않은 응답 → 재질문 대기 상태로 전환
@@ -961,7 +1006,7 @@ async def echo(websocket):
                     continue
 
                 if state["category"] == "차":
-                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"]})
+                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"], "total_price": item.price})
                     response_text = f"추가 메뉴 있으신가요?"
                     state.update({"step": "confirm_additional", "menu": None, "options": {}, "price": 0})
                 else:
@@ -978,7 +1023,7 @@ async def echo(websocket):
             elif state["step"] == "ask_shot":
                 if "아니" in cleaned_text:
                     state["options"]["shot"] = "없음"
-                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"]})
+                    state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"], "total_price": item.price})
                     response_text = f"추가 메뉴 있으신가요?"
                     state.update({"step": "confirm_additional", "menu": None, "options": {}, "price": 0})
 
@@ -1014,7 +1059,7 @@ async def echo(websocket):
                     state["shot_prompt_time"] = time.time()
                     continue
 
-                state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"]})
+                state["cart"].append({"name": state["menu"], "options": state["options"].copy(), "price": state["price"], "total_price": item.price})
                 response_text = f"추가 메뉴 있으신가요?"
                 state.update({"step": "confirm_additional", "menu": None, "options": {}, "price": 0})
 
@@ -1082,6 +1127,14 @@ async def echo(websocket):
                     state["step"] = "confirm_payment"
                     state["last_question"] = final_prompt
                     state["cart_summary"] = final_prompt
+
+                    print("📤 cart_summary 텍스트 전송 중:", final_prompt)
+                    await websocket.send(json.dumps({
+                        "type": "cart_summary",
+                        "text": final_prompt
+                    }))
+                    print("📤 cart_summary 전송 완료:", final_prompt)
+                                        
 
                     # 마이크 끄고 멘트 출력
                     await websocket.send("go_to_pay")
