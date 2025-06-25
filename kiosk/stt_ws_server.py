@@ -14,6 +14,8 @@ from django.db.utils import OperationalError
 from websockets.exceptions import ConnectionClosedError
 import json
 
+
+
 # ✅ 상태 저장 딕셔너리들
 client_sessions = {}  # client_id → state 매핑
 client_states = {}    # websocket → state 매핑
@@ -52,6 +54,16 @@ from azure.cognitiveservices.speech import (
 from azure.cognitiveservices.speech.audio import AudioOutputConfig
 from kiosk.models import MenuItem
 import openai
+
+
+@sync_to_async
+def get_price_from_db(menu_name):
+    try:
+        item = MenuItem.objects.get(name=menu_name)
+        return float(item.price)
+    except MenuItem.DoesNotExist:
+        print(f"❌ 메뉴 '{menu_name}'에 대한 가격 정보를 찾을 수 없습니다.")
+        return 0  # 기본값 처리
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -372,6 +384,7 @@ async def echo(websocket):
                         size = item["options"].get("size")
                         temp = item["options"].get("temp")
                         shot = item["options"].get("shot")
+                        
 
                         opt_parts = []
                         if size:
@@ -393,15 +406,34 @@ async def echo(websocket):
                     total = 0
                     
                     for item in state.get("cart", []):
-                        options = item.get("options", "")
-                        count = item.get("count", 1)
                         name = item.get("name", "")
-                        total_price = item.get("total_price", 0)
+                        options = item.get("options", {})
+                        count = item.get("count", 1)
+                        base_price = await get_price_from_db(name)
+                        
+                        # ✅ 옵션 기반 추가 가격 계산
+                        extra_price = 0
+                        size = options.get("size")
+                        shot = options.get("shot")
 
-                        summary += f"- {name} {options} {count}개에 {total_price}원\n"
+                        if size == "큰":
+                            extra_price += 500
+                        if shot == "1샷":
+                            extra_price += 300
+                        elif shot == "2샷":
+                            extra_price += 600
+
+                         
+
+                        total_price = (base_price + extra_price) * count
+                        item["price"] = base_price + extra_price  # ✅ 단가 갱신
+                        item["total_price"] = total_price         # ✅ 총액 갱신
+
+                        option_text = ", ".join([f"{k}: {v}" for k, v in options.items()])
+                        summary += f"- {name} {option_text} {count}개에 {total_price:,}원\n"
                         total += total_price
 
-                    final_prompt = f"{summary.strip()}\n총 결제 금액은 {total}원입니다.\n결제를 진행할까요? 네 또는 아니요로 말씀해주세요."
+                    final_prompt = f"{summary.strip()}\n총 결제 금액은 {total}원입니다.\n."
 
 
                     print("📤 cart_summary 텍스트 전송 중:", final_prompt)
@@ -415,14 +447,14 @@ async def echo(websocket):
                     state["last_question"] = final_prompt
                     state["cart_summary"] = final_prompt
 
-                    
-
-
-
+       
                     await websocket.send("go_to_pay")
-                    await websocket.send("mic_off")
+                    await websocket.send("mic_off")  # ✅ 순서상 늦어도 여전히 필요
                     await synthesize_speech(final_prompt, websocket, activate_mic=True)
+                
                     continue
+
+
 
                 # ❌ 아직도 인식 못했을 경우 → 대기 유지
                 elapsed = time.time() - state.get("additional_prompt_time", 0)
@@ -498,19 +530,44 @@ async def echo(websocket):
                 for item in state.get("cart", []):  # ✅ cart에서 바로 꺼냄
                     name = item.get("name")
                     price = item.get("total_price", 0)
+                    options = item.get("options", {})
                     count = item.get("count", 1)  # ✅ count 없으면 기본값 1로
-                    total += price
+
+                    base_price = await get_price_from_db(name)
+
+                    # ✅ 옵션에 따른 추가 금액 계산
+                    extra_price = 0
+                    size = options.get("size")
+                    shot = options.get("shot")
+                                        
+                    if size == "큰":
+                        extra_price += 500
+                    if shot == "1샷":
+                        extra_price += 300
+                    elif shot == "2샷":
+                        extra_price += 600
+
+                    final_price = base_price + extra_price
+                    total_price = final_price * count
+
+                    # ✅ cart 내부에도 다시 반영
+                    item["price"] = final_price
+                    item["total_price"] = total_price
+
+                    # ✅ 전달할 JSON 항목 구성
                     items.append({
                         "name": name,
                         "count": count,
-                        "price": price
+                        "price": final_price
                     })
 
-                await websocket.send(json.dumps({
-                    "type": "cart_items",
-                    "items": items
-                }, default=str))
-                print("📤 cart_items 전송 완료:", items)
+                    total += total_price
+
+                    await websocket.send(json.dumps({
+                        "type": "cart_items",
+                        "items": items
+                    }, default=str))
+                    print("📤 cart_items 전송 완료:", items)
 
     
             try:
@@ -594,6 +651,13 @@ async def echo(websocket):
                 await synthesize_speech(response_text, websocket, activate_mic=True)
                 continue
 
+            elif text == "request_summary_tts":
+                prompt = state.get("cart_summary")
+                if prompt:
+                    await websocket.send("mic_off")
+                    await synthesize_speech(prompt, websocket, activate_mic=True)
+                continue  # 다른 메시지 처리 안 하도
+            
 
             elif text == "resume_from_pay":
                 print("🔁 pay_all 복귀 요청 수신 → 장바구니 요약 및 결제 질문 재출력")
@@ -606,7 +670,7 @@ async def echo(websocket):
                 if summary:
                     await synthesize_speech(summary.strip(), websocket, activate_mic=False)
 
-                followup = state.get("last_question", "총 결제 금액은 ~원입니다. 결제를 진행할까요?")
+                followup = state.get("last_question", "총 결제 금액은 ~원입니다. ")
                 await synthesize_speech(followup.strip(), websocket, activate_mic=True)
 
 
@@ -1122,7 +1186,7 @@ async def echo(websocket):
                         total += item["total_price"]
 
                     # 2️⃣ 결제 질문
-                    final_prompt = f"{summary.strip()}\n총 결제 금액은 {total}원입니다.\n결제를 진행할까요? 네 또는 아니요로 말씀해주세요."
+                    final_prompt = f"{summary.strip()}\n총 결제 금액은 {total}원입니다."
 
                     state["step"] = "confirm_payment"
                     state["last_question"] = final_prompt
@@ -1167,7 +1231,7 @@ async def echo(websocket):
                 print(f"🧹 정제 후 응답: {cleaned}")
                 print(f"✅ 긍정 인식 여부: {is_positive(cleaned)}")
 
-                if is_positive(cleaned):
+                if is_positive(cleaned) and state["step"] in ["confirm_payment", "waiting_payment_retry"]:
                     print("💳 결제 확정 → 팝업 실행")
                     state["step"] = "payment_in_progress"
 
@@ -1202,7 +1266,10 @@ async def echo(websocket):
                         "finalized": False,
                         "first_order_done": False
                     })
-                    return
+                    continue
+                    
+                    
+
                 
                 
                 
@@ -1230,22 +1297,24 @@ async def echo(websocket):
 
                 else:
                     print(f"📨 수신된 응답: {cleaned}, 현재 상태: {state['step']}, is_positive: {is_positive(cleaned)}")
-
+                    await websocket.send("mic_off")  
                      # ❌ 여기서만 재질문 필요
                     retry_text = "결제를 진행할까요? 네 또는 아니요로 말씀해주세요."
                     state["step"] = "waiting_payment_retry"
                     state["last_question"] = retry_text
 
 
-                    # 🟡 마이크는 이때 한 번만 켬
-                    await websocket.send("mic_off")
-                    await synthesize_speech(retry_text, websocket, activate_mic=True)
+                    await websocket.send("mic_off")              # 1. 마이크 끄고
+                    await synthesize_speech(retry_text, websocket, activate_mic=False)  # 3. TTS만 실행
+                    await asyncio.sleep(0.2)                     # 4. TTS 끝나고도 잠깐 대기
+                    await websocket.send("mic_on")  
 
                     # ⏱️ 8초 후 응답 없으면 재질문
                     async def delayed_payment_retry():
                         await asyncio.sleep(8)
                         if state["step"] == "waiting_payment_retry":
                             print("⏱️ 응답 없음 → 결제 재질문 출력")
+                            await asyncio.sleep(1)
 
                             # ✅ 마지막 질문과 다르면 (= 이미 응답해서 진행 중이면) 재질문 X
                             if state.get("last_question") != retry_text:

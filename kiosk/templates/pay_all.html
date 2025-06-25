@@ -285,8 +285,7 @@
 
 
 
-  <div class="total-price">
-    총 금액: {{ total_price|floatformat:0 }}원
+ 
   </div>
 
 
@@ -305,7 +304,7 @@
     <div class="popup">
       <h1>결제</h1>
       <hr />
-      <div class="symbol">₩</div>
+      
       <hr />
       <div class="text">
         결제 중입니다.<br>
@@ -366,6 +365,18 @@
 
 
   <script>
+
+
+    if (window.location.pathname === "/pay_all") {
+      setTimeout(() => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send("request_summary_tts");
+          console.log("📤 서버에 request_summary_tts 전송");
+        }
+      }, 700);  // 살짝 안정화 시간
+    }
+
+
       function showPopup() {
       document.getElementById('popup-overlay').style.display = 'flex';
     }

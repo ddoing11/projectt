@@ -95,13 +95,19 @@ function createWebSocket() {
             </div>
           `).join('');
           console.log("🧾 장바구니 항목 렌더링 완료:", items);
+
+          // ✅ 렌더링 끝난 후 서버에 TTS 요청
+          setTimeout(() => {
+            if (socket?.readyState === WebSocket.OPEN) {
+              socket.send("request_cart_summary");
+            }
+          }, 300);  // 약간의 여유를 줘도 좋음
         }
         return;
       }
     } catch (e) {
       console.warn("⚠️ JSON 파싱 실패. 일반 메시지 처리 시도:", event.data);
     }
-
     
     const text = event.data.trim();
     console.log('📩 서버 응답:', text);
