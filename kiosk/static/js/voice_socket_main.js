@@ -244,9 +244,10 @@ function createWebSocket() {
     console.warn("🔌 WebSocket 연결 종료됨. 재연결 시도...");
     console.log("🔌 WebSocket 종료 상세:", event.code, event.reason);
 
-    setTimeout(() => {
-      window.location.reload();  // 또는 reconnectSocket()
-    }, 100);  // ⏱ 1초 후 재시도
+  // 🔻 아래 줄을 주석처리해서 자동 새로고침 중단!
+  // setTimeout(() => {
+  //   window.location.reload();  // 또는 reconnectSocket()
+  // }, 100);  // ⏱ 1초 후 재시도
   };
 
 
@@ -368,29 +369,25 @@ document.addEventListener("DOMContentLoaded", () => {
   createWebSocket();
 
 
-  if (window.location.pathname.includes("start")) {
-    document.addEventListener("click", () => {
-      console.log("🖱️ 화면 클릭됨 → start_order 전송");
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send("start_order");
-      }
-    });
-  }
+  
 
   // ✅ 👉 /order 페이지 진입 시 음성 인식 여부 결정
+  // ✅ 👉 /order 페이지 진입 시 음성 인식 여부 결정
   if (window.location.pathname === "/order") {
-    const disableVoice = localStorage.getItem("disableVoice") === "true";
-    if (disableVoice) {
-      console.log("🔇 disableVoice=true → 음성 인식 비활성화");
-      localStorage.removeItem("disableVoice");
-    } else {
+      const disableVoice = localStorage.getItem("disableVoice") === "true";
+      if (disableVoice) {
+          console.log("🔇 disableVoice=true → 플래그 제거하고 음성 인식 활성화");
+          localStorage.removeItem("disableVoice");  // 플래그 제거
+      }
+      
+      // 항상 음성 인식 시작
       console.log("🎤 음성 인식 요청");
-
-      // ✅ 상태 복원을 서버에 요청 (step = await_menu)
-      socket.send("resume_from_menu");
-    }
+      setTimeout(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+              socket.send("resume_from_menu");
+          }
+      }, 300);  // 약간 지연 후 전송
   }
-
   const payButton = document.querySelector(".pay-button");
   if (payButton) {
     payButton.addEventListener("click", () => {
@@ -415,3 +412,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 });    
+
+
+// start 페이지에서 클릭 이벤트 등록 (영구적)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🎯 start 페이지 클릭 이벤트 등록 중...");
+    
+    // 전체 document에 클릭 이벤트 등록
+    document.addEventListener('click', function(event) {
+        console.log("🖱️ 클릭 감지! 현재 경로:", window.location.pathname);
+        
+        // start 페이지에서만 작동
+        if (window.location.pathname === "/" || 
+            window.location.pathname.includes("start") || 
+            window.location.pathname === "/start/") {
+            
+            console.log("✅ start 페이지에서 클릭됨 → 음성 주문 시작");
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                // start_order 메시지 전송
+                socket.send("start_order");
+                console.log("📤 start_order 전송됨");
+                
+                // TTS 요청 전송
+                /*
+                const ttsMessage = {
+                    type: 'text_to_speech',
+                    text: '음성으로 주문하시겠습니까?'
+                };
+                socket.send(JSON.stringify(ttsMessage));
+                console.log("🎤 TTS 메시지 전송:", ttsMessage);
+                */
+            } else {
+                console.warn("❌ WebSocket 연결 안됨:", socket?.readyState);
+            }
+        }
+    });
+    
+    console.log("🎯 start 페이지 클릭 이벤트 등록 완료!");
+});

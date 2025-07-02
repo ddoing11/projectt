@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import mimetypes
 import dj_database_url  # pip install dj-database-url
+import pymysql
+pymysql.install_as_MySQLdb()
+
 
 mimetypes.add_type("application/javascript", ".js", True)
 
@@ -69,16 +72,16 @@ ASGI_APPLICATION = 'aptitude.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('MYSQL_DATABASE', 'railway'),
-        'USER': os.environ.get('MYSQL_USER', 'root'),
-        'PASSWORD': os.environ.get('MYSQL_PASSWORD', ''),
-        'HOST': os.environ.get('MYSQL_HOST', 'localhost'),
-        'PORT': os.environ.get('MYSQL_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'NAME': 'mykioskdb',
+        'USER': 'root',
+        'PASSWORD': '1234',  # ALTER USER로 설정한 비밀번호
+        'HOST': 'localhost',
+        'PORT': '3306',
+     
     }
 }
+
+
 
 
 # 비밀번호 검증

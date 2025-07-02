@@ -1,33 +1,57 @@
 import asyncio
 import websockets
+import os
+import sys
+from websockets.exceptions import ConnectionClosedError
 
-connected_clients = set()
+# Django 설정
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.aptitude.settings")
+import django
+django.setup()
 
-async def echo(websocket):  # ✅ path 제거
-    print("🔗 클라이언트 연결됨")
-    connected_clients.add(websocket)
-    try:
-        async for message in websocket:
-            message = message.strip()
-            print(f"📨 받은 메시지: {message}")
-            if message == "start_order":
-                print("🗣️ '음성으로 주문하시겠습니까?' 전송 중")
-                await websocket.send("음성으로 주문하시겠습니까?")
-            elif "네" in message:
-                await websocket.send("음성 주문을 시작합니다. 원하시는 메뉴가 있으신가요?")
-            elif "아니" in message:
-                await websocket.send("음성 인식을 종료합니다. 일반 키오스크로 주문을 진행하세요.")
-            else:
-                await websocket.send("죄송합니다. 다시 말씀해 주세요.")
-    except websockets.ConnectionClosed:
-        print("❌ 클라이언트 연결 종료")
-    finally:
-        connected_clients.remove(websocket)
+from .simplified_message_router import SimplifiedMessageRouter
 
-async def main():
-    async with websockets.serve(echo, "localhost", 8002):
-        print("✅ WebSocket 서버가 8002 포트에서 실행 중")
-        await asyncio.Future()
+
+class WebSocketServer:
+    def __init__(self):
+        self.message_router = SimplifiedMessageRouter()
+
+    async def echo(self, websocket):
+        """WebSocket 연결 처리"""
+        state = await self.message_router.handle_connection(websocket)
+        
+        try:
+            while True:
+                if state.get("finalized"):
+                    await asyncio.sleep(1)
+                    continue
+
+                message = await websocket.recv()
+                await self.message_router.process_message(websocket, message)
+
+        except websockets.ConnectionClosed:
+            print("❌ 클라이언트 연결 종료")
+        except Exception as e:
+            print(f"❌ 연결 처리 중 오류: {e}")
+        finally:
+            await self.message_router.cleanup_connection(websocket)
+
+    async def start_server(self, host="0.0.0.0", port=None):
+        """서버 시작"""
+        if port is None:
+            port = int(os.environ.get("PORT", 8002))
+        
+        async with websockets.serve(self.echo, host, port):
+            print(f"✅ WebSocket 서버가 {port}번 포트에서 실행 중")
+            await asyncio.Future()  # 서버를 계속 실행
+
+
+def run_server():
+    """서버 실행 함수"""
+    server = WebSocketServer()
+    asyncio.run(server.start_server())
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_server()
