@@ -24,8 +24,13 @@
     }
   </style>
   <script>
-    const socket = new WebSocket("wss://6a01-49-143-8-202.ngrok-free.app");
+    // 호스트 이름이 localhost/127.0.0.1이면 로컬 포트 8002로 접속, 배포 환경에서는 원래 주소 사용
+    const wsUrl =
+      window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+        ? "ws://127.0.0.1:8002"
+        : "wss://6a01-49-143-8-202.ngrok-free.app";
 
+    const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
       console.log("✅ WebSocket 연결됨");
@@ -36,19 +41,20 @@
       const message = event.data;
       console.log("📩 서버 응답:", message);
 
+      // 서버가 'say_payment_done' 메시지를 보내는 경우 처리
       if (message === "say_payment_done") {
         console.log("🔊 '결제 완료' 음성 재생 트리거");
-        // 필요시 추가 작업 가능 (예: 애니메이션, 시각 효과 등)
+        // 필요시 여기서 애니메이션이나 화면 효과를 추가할 수 있습니다.
       }
     };
 
-    // 4.5초 뒤에 /start로 이동
+    // 4.5초 뒤에 /start로 자동 이동
     setTimeout(() => {
       window.location.href = '/start';
     }, 4500);
   </script>
 </head>
-<body onclick="location.href='start.html'">
+<body>
   <div class="full-bg"></div>
 </body>
 </html>

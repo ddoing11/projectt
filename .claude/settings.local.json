@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk\\templates/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk\\static\\js/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)",
+      "Read(/C:\\Users\\박미숙\\Desktop\\projectt\\kiosk/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

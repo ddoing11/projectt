@@ -28,16 +28,19 @@ function showPopupWithRetry(retryCount = 10) {
     }
 
 
-
 function createWebSocket() {
   if (socket && socket.readyState === WebSocket.OPEN) {
     console.warn("⚠️ 이미 연결된 WebSocket 있음. 생략.");
     return;
   }
-  socket = new WebSocket("wss://mykiosk8002.jp.ngrok.io");
+  // 로컬 테스트 시에는 127.0.0.1의 8002 포트를 사용
+  // 배포 시에는 wss://mykiosk8002.jp.ngrok.io 등 실제 서버 주소로 교체
+  const wsUrl =
+    window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+      ? "ws://127.0.0.1:8002"
+      : "wss://mykiosk8002.jp.ngrok.io";
 
-
-
+  socket = new WebSocket(wsUrl);
 
 
 
