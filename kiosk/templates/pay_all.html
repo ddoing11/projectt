@@ -1,134 +1,126 @@
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=1640, user-scalable=no" />
-  <title>결제하기</title>
-  <script src="https://aka.ms/csspeech/jsbrowserpackagestandard"></script>
+  <title>결제</title>
+  <script src="https://aka.ms/csspeech/jsbrowserpackagestandard" defer></script>
+  <script src="{% static 'js/voice_socket_main.js' %}" defer></script>
+
   <style>
     @font-face {
-      font-family: 'BMDoHyeon';
-      src: url("{% static 'fonts/BMDoHyeon.ttf' %}") format('truetype');
-    }
-    @font-face {
       font-family: 'Hakgyoansim';
-      src: url("{% static 'fonts/Hakgyoansim.ttf' %}") format('truetype');
+      src: url('{% static 'fonts/Hakgyoansim.ttf' %}') format('truetype');
     }
-    @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2301@1.1.1/DalseoDarling.woff');
-
+    
     html, body {
       margin: 0;
       padding: 0;
       width: 1640px;
       height: 2360px;
-      background-color: #fdfaf7;
+      background-color: #fdf7f7;
       font-family: 'Hakgyoansim', sans-serif;
       overflow: hidden;
-      position: relative;
     }
 
-    .top-bar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 80px 120px;
-      position: relative;
-      border-bottom: 2px solid #999;
-    }
-
-    .home-button {
-      position: absolute;
-      left: 80px;
-      top: 55%;
-      transform: translateY(-50%);
-      background-color: #eceae7;
-      border: none;
-      padding: 20px 40px;
-      border-radius: 20px;
-      font-size: 48px;
-      font-weight: bold;
-      font-family: 'BMDoHyeon', sans-serif;
-      color: rgba(0, 0, 0, 0.5);
-      opacity: 0.7;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: transform 0.2s;
-    }
-
-    .home-button:active {
-      transform: translateY(-50%) scale(0.95);
-    }
-
-    .home-icon {
-      width: 60px;
-      height: 60px;
+    .container {
+      padding: 80px;
+      text-align: center;
     }
 
     .title {
-      font-size: 60px;
+      font-size: 80px;
       font-weight: bold;
-      font-family: 'DalseoDarling', cursive;
-      position: absolute;
-      left: 50%;
-      top: 44%;
-      transform: translateX(-50%);
+      margin-bottom: 60px;
+      color: #333;
     }
 
-    .table-header {
+    .cart-section {
+      background: white;
+      border: 3px solid #ddd;
+      border-radius: 20px;
+      padding: 60px;
+      margin-bottom: 60px;
+      min-height: 800px;
+    }
+
+    .cart-header {
       display: flex;
       justify-content: space-around;
       padding: 40px 80px;
-      border-bottom: 2px solid #999;
-      font-weight: bold;
+      background-color: #f5f5f5;
+      border-radius: 15px;
+      margin-bottom: 30px;
       font-size: 48px;
-    }
-
-    .table-content {
-      height: 1450px;
-      padding: 60px 80px 0;
-      font-size: 42px;
-      overflow-y: auto;
-    }
-
-    .total-price {
-      display: flex;
-      align-items: center;
-      padding: 50px 80px;
-      padding-left: 400px;
-      border-top: 2px solid #999;
-      font-size: 60px;
       font-weight: bold;
     }
 
-    .buttons {
+    .cart-header div {
+      width: 33%;
+      text-align: center;
+    }
+
+    #cart-items {
+      min-height: 400px;
+      font-size: 42px;
+    }
+
+    .cart-item-row {
+      display: flex;
+      justify-content: space-around;
+      padding: 30px 80px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .cart-item-row div {
+      width: 33%;
+      text-align: center;
+    }
+
+    .total-section {
+      background-color: #ffe08c;
+      padding: 40px;
+      border-radius: 15px;
+      margin-top: 40px;
+    }
+
+    .total-text {
+      font-size: 56px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .payment-section {
       display: flex;
       justify-content: center;
-      gap: 100px;
-      margin-top: 50px;
+      gap: 60px;
     }
 
     .btn {
-      background-color: #5d3b1a;
-      color: white;
+      padding: 40px 80px;
+      font-size: 48px;
       border: none;
-      border-radius: 50px;
-      padding: 53px 132px;
-      font-size: 45px;
-      font-weight: bold;
+      border-radius: 15px;
       cursor: pointer;
+      font-family: 'Hakgyoansim', sans-serif;
       transition: transform 0.2s;
     }
 
-    .btn:active {
-      transform: scale(0.95);
+    .btn:hover {
+      transform: scale(1.05);
     }
 
-    /* 팝업 오버레이 */
+    .btn-primary {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #f44336;
+      color: white;
+    }
+
     #popup-overlay {
       display: none;
       position: fixed;
@@ -136,284 +128,113 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.5);
       z-index: 9999;
       justify-content: center;
       align-items: center;
     }
 
-    #popup-overlay iframe {
-      width: 1315px;
-      height: 1282px;
-      border: none;
+    .popup-content {
+      background: white;
+      padding: 80px;
       border-radius: 20px;
-    }
-
-
-    body {
-      background-color: #fdfaf7;
-      font-family: 'Hakgyoansim', sans-serif;
-      margin: 0;
-      padding: 0;
-      width: 100%;
-    }
-
-    table {
-      width: 90%;
-      margin: 40px auto 20px;
-      border-collapse: collapse;
-      font-size: 1.5rem;
-    }
-
-    th, td {
-      padding: 15px;
-      border-bottom: 1px solid #aaa;
       text-align: center;
+      font-size: 60px;
     }
 
-    th {
-      background-color: #eee;
+    .loading {
+      color: #666;
+      font-style: italic;
     }
-
-    .total {
-      text-align: right;
-      font-weight: bold;
-      font-size: 1.6rem;
-      margin: 40px 5% 20px;
-    }
-
-    .button-area {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 30px;
-    }
-
-    .button-area button {
-      font-size: 1.3rem;
-      padding: 15px 30px;
-      border: none;
-      border-radius: 12px;
-      background-color: #5c4033;
-      color: white;
-      cursor: pointer;
-    }
-
-    
   </style>
-  <!-- pay_all.html 하단에 추가 -->
-  <script src="{% static 'js/voice_socket_main.js' %}"></script>
-
 </head>
-
-<script>
-  function showPopupWithRetry(retry = 0) {
-    const popup = document.getElementById('popup-overlay');
-    if (popup) {
-      popup.style.display = 'flex';
-      console.log("✅ 팝업 표시됨");
-      setTimeout(() => {
-        window.location.href = "/done";
-      }, 5000);
-    } else {
-      if (retry < 5) {
-        console.warn("❌ popup-overlay 끝내 찾을 수 없음. 재시도 중...", retry);
-        setTimeout(() => showPopupWithRetry(retry + 1), 300);
-      } else {
-        console.error("❌ popup-overlay 표시 실패: 5번 재시도 후도 실패");
-      }
-    }
-  }
-
-  function showPopup() {
-    document.getElementById('popup-overlay').style.display = 'flex';
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    
-
-    // 🔁 WebSocket 재연결
-    if (localStorage.getItem("continueRecognition") === "true") {
-      localStorage.removeItem("continueRecognition");
-      console.log("🔁 pay_all 진입 후 서버에 상태 요청");
-      if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-        socket.send("resume_from_pay");
-      } else {
-        const retryInterval = setInterval(() => {
-          if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-            socket.send("resume_from_pay");
-            clearInterval(retryInterval);
-          }
-        }, 100);
-      }
-    }
-
-    // 🧾 결제 버튼이 client_id 포함된 URL로 이동
-    const payButton = document.querySelector(".pay-button");
-    if (payButton) {
-      payButton.addEventListener("click", () => {
-        const clientId = localStorage.getItem("client_id");
-        if (clientId) {
-          window.location.href = `/pay_all?client_id=${clientId}`;
-        } else {
-          alert("client_id가 없습니다.");
-        }
-      });
-    }
-  });
-</script>
-
-
 <body>
-
-  <div class="top-bar">
-    <button class="home-button" onclick="location.href='/start'">
-      <img src="{% static 'images/home_icon.png' %}" alt="Home" class="home-icon">
-      <span style="padding-top: 5px;">처음으로</span>
-    </button>
-    <div class="title">결제하기</div>
-  </div>
-
-  <div class="table-header">
-    <div>제품</div>
-    <div>수량</div>
-    <div>가격</div>
-  </div>
-
-
-
-  <div id="cart-items" class="table-content" style="font-size: 48px;"></div>
-
-
-
- 
-  </div>
-
-
-
+  <div class="container">
+    <div class="title">주문 확인 및 결제</div>
     
-  </div>
-
-
-  </div>
-
-  <!-- 팝업 오버레이 -->
-  <!-- pay_all.html의 하단에 추가 -->
-  <div id="popup-overlay" style="display: none; justify-content: center; align-items: center;">
-
-
-    <div class="popup">
-      <h1>결제</h1>
-      <hr />
-      
-      <hr />
-      <div class="text">
-        결제 중입니다.<br>
-        잠시만 기다려 주세요.
+    <div class="cart-section">
+      <div class="cart-header">
+        <div>메뉴</div>
+        <div>수량</div>
+        <div>가격</div>
       </div>
+      
+      <div id="cart-items">
+        <div class="loading">주문 내역을 불러오는 중...</div>
+      </div>
+      
+      <div class="total-section">
+        <div class="total-text" id="total-price">총 0원</div>
+      </div>
+    </div>
+
+    <div class="payment-section">
+      <button class="btn btn-primary" onclick="confirmPayment()">결제 진행</button>
+      <button class="btn btn-secondary" onclick="goBack()">이전으로</button>
     </div>
   </div>
 
-  <style>
-    .popup {
-      background: white;
-      width: 1315px;
-      height: 1282px;
-      border-radius: 20px;
-      padding: 80px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 9999;
-    }
-
-    .popup h1 {
-      font-size: 60px;
-      font-family: 'BMDoHyeon', sans-serif;
-      margin-bottom: 40px;
-    }
-
-    .popup hr {
-      width: 100%;
-      border: none;
-      border-top: 1px solid #999;
-      margin: 30px 0;
-    }
-
-    .popup .symbol {
-      font-size: 120px;
-      align-self: flex-start;
-      padding-left: 200px;
-      margin: 20px 0;
-    }
-
-    .popup .text {
-      font-size: 48px;
-      text-align: center;
-      margin-top: 180px;
-      font-family: 'BMDoHyeon', sans-serif;
-      line-height: 2.5;
-    }
-  </style>
-
-
-
-
+  <div id="popup-overlay">
+    <div class="popup-content">
+      <div>결제를 진행하고 있습니다...</div>
+      <div style="font-size: 40px; margin-top: 30px;">잠시만 기다려주세요</div>
+    </div>
+  </div>
 
   <script>
+    function confirmPayment() {
+      // 음성으로 결제 확인 요청
+      if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+        window.socket.send("confirm_payment_request");
+      }
+    }
 
+    function goBack() {
+      const clientId = new URLSearchParams(window.location.search).get('client_id');
+      if (clientId) {
+        window.location.href = `/order?client_id=${clientId}`;
+      } else {
+        window.location.href = '/order';
+      }
+    }
 
-    if (window.location.pathname === "/pay_all") {
+    // 장바구니 아이템 업데이트 함수 (JavaScript에서 호출됨)
+    function updateCartItems(items) {
+      const cartContainer = document.getElementById('cart-items');
+      const totalElement = document.getElementById('total-price');
+      
+      if (!items || items.length === 0) {
+        cartContainer.innerHTML = '<div class="loading">장바구니가 비어있습니다.</div>';
+        totalElement.textContent = '총 0원';
+        return;
+      }
+
+      let total = 0;
+      const itemsHtml = items.map(item => {
+        const itemTotal = item.price * item.count;
+        total += itemTotal;
+        return `
+          <div class="cart-item-row">
+            <div>${item.name}</div>
+            <div>${item.count}개</div>
+            <div>${itemTotal.toLocaleString()}원</div>
+          </div>
+        `;
+      }).join('');
+
+      cartContainer.innerHTML = itemsHtml;
+      totalElement.textContent = `총 ${total.toLocaleString()}원`;
+    }
+
+    // 페이지 로드 시 장바구니 요청
+    document.addEventListener('DOMContentLoaded', function() {
+      // voice_socket_main.js가 로드된 후 장바구니 요청
       setTimeout(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          socket.send("request_summary_tts");
-          console.log("📤 서버에 request_summary_tts 전송");
+        if (window.socket && window.socket.readyState === WebSocket.OPEN) {
+          window.socket.send("read_cart");
         }
-      }, 700);  // 살짝 안정화 시간
-    }
-
-
-      function showPopup() {
-      document.getElementById('popup-overlay').style.display = 'flex';
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      if (localStorage.getItem("continueRecognition") === "true") {
-        localStorage.removeItem("continueRecognition");
-        console.log("🔁 pay_all 진입 후 서버에 상태 요청");
-        if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-          socket.send("resume_from_pay");
-        } else {
-          const retryInterval = setInterval(() => {
-            if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
-              socket.send("resume_from_pay");
-              clearInterval(retryInterval);
-            }
-          }, 100);
-        }
-      }
-
-      // ✅ 결제 버튼 클릭 시 client_id를 포함한 URL로 이동
-      const payButton = document.querySelector(".pay-button");
-      if (payButton) {
-        payButton.addEventListener("click", () => {
-          const clientId = localStorage.getItem("client_id");
-          if (clientId) {
-            window.location.href = `/pay_all?client_id=${clientId}`;
-          } else {
-            alert("client_id가 없습니다.");
-          }
-        });
-      }
+      }, 1000);
     });
-  </script> <!-- ✅ 꼭 닫아야 함 -->
-
-  
-
+  </script>
 </body>
 </html>
