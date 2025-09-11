@@ -17,7 +17,7 @@ urlpatterns = [
     path("popup/popup_drink/", views.popup_drink, name='popup_drink'),
     path("popup/popup_tea/", views.popup_tea, name='popup_tea'),
     path('popup/popup_coffee/', views.popup_coffee, name='popup_coffee'),
-  
+    path('api/tts-token/', kiosk_views.tts_token, name='tts_token'),
     path('pay_all2', views.pay_all2, name='pay_all2'),
     path('done/', views.done, name='done'),
     path('menu/coffee/', views.menu_coffee, name='menu_coffee'),

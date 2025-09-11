@@ -12,6 +12,28 @@ from django.http import FileResponse
 from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
 import uuid
 import os
+import requests
+
+# kiosk/views.py 상단에 추가
+from django.conf import settings
+
+@csrf_exempt
+def tts_token(request):
+    # settings.py 또는 local_settings.py에서 값을 읽어옵니다.
+    speech_key = getattr(settings, 'AZURE_SPEECH_KEY', None)
+    region = getattr(settings, 'AZURE_SPEECH_REGION', None)
+    if not speech_key or not region:
+        return JsonResponse({"error": "Missing speech key or region."}, status=500)
+
+    token_url = f"https://{region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+    response = requests.post(
+        token_url,
+        headers={"Ocp-Apim-Subscription-Key": speech_key},
+    )
+    if response.status_code == 200:
+        return JsonResponse({"token": response.text, "region": region})
+    return JsonResponse({"error": "Failed to obtain token."}, status=500)
+
 
 def voice_socket_dummy(request):
     return HttpResponse("voice_socket dummy - iframe용")

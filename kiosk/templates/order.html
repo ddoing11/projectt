@@ -5,7 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=1640, user-scalable=no" />
   <title>메뉴 주문</title>
-  <script src="{% static 'js/voice_socket_main.js' %}"></script>
+  <script src="https://aka.ms/csspeech/jsbrowserpackagestandard" defer></script>
+  <script src="{% static 'js/voice_socket_main.js' %}" defer></script>
+
   <style>
     @font-face {
       font-family: 'Hakgyoansim';
@@ -271,7 +273,8 @@
   <img id="arrow-left" class="arrow-left"
      src="{% static 'images/arrow_right.png' %}"
      style="transform: rotate(180deg);"
-     onclick="showTab('drink', this)" />
+     onclick="showTab('drink', document.getElementById('tab-btn-drink'))" />
+
      
   <div id="tab-coffee" class="menu-tab active">
     <div class="menu-item">
@@ -318,9 +321,10 @@
       <div class="name">요거트 스무디</div>
       <div class="price">5500원</div>
     </div>
-    <img class="arrow-right" src="{% static 'images/arrow_right.png' %}" alt="다음" onclick="showTab('drink2', this)" />
+    <img class="arrow-right" src="{% static 'images/arrow_right.png' %}"
+     alt="다음" onclick="showTab('drink2', document.getElementById('tab-btn-drink'))" />
   </div>
-</div>
+
 
 
 <div id="tab-drink2" class="menu-tab">
@@ -399,8 +403,6 @@
   </div>
 
 
-  
-  </div>
 
   <div id="popup-overlay">
     <iframe id="popup-frame"></iframe> <!-- ✅ src는 자바스크립트로 설정 -->
@@ -409,38 +411,24 @@
   <script>
     function showTab(tabName, btn) {
       // 탭 전환
-      document.querySelectorAll('.menu-tab').forEach(tab => {
-        tab.classList.remove('active');
-      });
+      document.querySelectorAll('.menu-tab').forEach(tab => tab.classList.remove('active'));
       document.getElementById(`tab-${tabName}`).classList.add('active');
 
-      document.querySelectorAll('.tab-menu button').forEach(button => {
-        button.classList.remove('active');
-      });
+      // 탭 버튼 active 토글
+      document.querySelectorAll('.tab-menu button').forEach(button => button.classList.remove('active'));
 
-      // ✅ 현재 누른 버튼에만 active 추가
-      btn.classList.add('active');
-      
-      // ✅ 버튼에 active 클래스 적용
       if (tabName === 'drink' || tabName === 'drink2') {
-        // 음료 탭이면 "음료" 버튼에 적용
         const drinkBtn = document.getElementById('tab-btn-drink');
         if (drinkBtn) drinkBtn.classList.add('active');
-      } else {
-        // 그 외엔 클릭된 버튼에 적용
-        if (btn) btn.classList.add('active');
+      } else if (btn) {
+        btn.classList.add('active');
       }
 
-      
-    
-      // 화살표 표시 조건
+      // 화살표 표시
       const arrow = document.getElementById('arrow-left');
-      if (tabName === 'drink2') {
-        arrow.style.display = 'block';
-      } else {
-        arrow.style.display = 'none';
-      }
+      arrow.style.display = (tabName === 'drink2') ? 'block' : 'none';
     }
+
 
       
 
@@ -534,21 +522,7 @@
       
 
 
-    document.querySelectorAll('#tab-drink .menu-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const name = item.querySelector('.name').innerText;
-        const priceText = item.querySelector('.price').innerText;
-        const price = parseInt(priceText.replace('원', ''));
-
-        const popup = document.getElementById('popup-overlay');
-        const frame = document.getElementById('popup-frame');
-        frame.src = "/popup/popup_drink/";
-        popup.style.display = 'flex';
-
-        localStorage.setItem('selectedMenu', name);
-        localStorage.setItem('selectedPrice', price);
-      });
-    });
+    
 
     // 🍰 디저트 메뉴 → 옵션 없이 바로 장바구니 추가
     document.querySelectorAll('#tab-dessert .menu-item').forEach(item => {
