@@ -165,23 +165,6 @@ function loadScript(src) {
     });
 }
 
-function waitForSpeechSDK(timeoutMs = 10000) {
-    return new Promise((resolve, reject) => {
-        const start = Date.now();
-        function check() {
-            if (window.SpeechSDK) {
-                console.log("✅ Speech SDK 준비됨");
-                return resolve();
-            }
-            if (Date.now() - start > timeoutMs) {
-                return reject(new Error("Speech SDK 로드 타임아웃"));
-            }
-            setTimeout(check, 200);
-        }
-        check();
-    });
-}
-
 // TTS 사전 초기화 (페이지 로드 시 실행)
 async function preWarmTTS() {
     if (ttsPreWarmed) return;
@@ -189,12 +172,22 @@ async function preWarmTTS() {
     console.log("🔥 TTS 사전 초기화 시작...");
     
     try {
-        // Azure Speech SDK 로드
-        await loadAzureSpeechSDK();
+        // Azure Speech SDK 로드 (타임아웃 추가)
+        const loadPromise = loadAzureSpeechSDK();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("SDK 로드 타임아웃")), 5000)
+        );
         
-        // TTS 토큰 미리 가져오기
+        await Promise.race([loadPromise, timeoutPromise]);
+        
+        // TTS 토큰 미리 가져오기 (타임아웃 추가)
         console.log("🔄 TTS 토큰 사전 요청...");
-        const res = await fetch("/api/tts-token/");
+        const tokenPromise = fetch("/api/tts-token/");
+        const tokenTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("토큰 요청 타임아웃")), 3000)
+        );
+        
+        const res = await Promise.race([tokenPromise, tokenTimeoutPromise]);
         
         if (!res.ok) {
             throw new Error(`TTS token fetch failed: ${res.status}`);
@@ -223,7 +216,7 @@ async function preWarmTTS() {
     } catch (e) {
         console.warn("⚠️ TTS 사전 초기화 실패, 브라우저 TTS 사용:", e);
         useFallbackTTS = true;
-        ttsPreWarmed = true;
+        ttsPreWarmed = true; // 실패해도 true로 설정하여 더 이상 대기하지 않음
     }
 }
 
@@ -253,8 +246,21 @@ async function speakText(text, activateMic = true) {
         
         lastSpoken = { norm: normalizeText(text), at: Date.now() };
         
+        // Azure TTS 초기화가 진행 중이면 잠시 대기
+        if (!ttsPreWarmed && !useFallbackTTS) {
+            console.log("⏳ Azure TTS 초기화 대기 중...");
+            // 최대 3초 대기
+            let waitCount = 0;
+            while (!ttsPreWarmed && !useFallbackTTS && waitCount < 30) {
+                await new Promise(r => setTimeout(r, 100));
+                waitCount++;
+            }
+            console.log(`⏳ 대기 완료: ttsPreWarmed=${ttsPreWarmed}, waitCount=${waitCount}`);
+        }
+        
         if (useFallbackTTS || !ttsPreWarmed) {
             // 브라우저 내장 TTS 사용 (즉시 재생)
+            console.log("🔄 브라우저 TTS 사용");
             await speakWithBrowserTTS(text, activateMic);
             return;
         }
@@ -335,7 +341,8 @@ async function drainTts() {
         console.error("❌ TTS 큐 처리 오류:", error);
     } finally {
         drainingTts = false;
-        console.log("✅ TTS 큐 처리 완료");
+        isSpeaking = false; // 큐 처리 완료 시 상태 초기화
+        console.log("✅ TTS 큐 처리 완료 - isSpeaking: false");
     }
 }
 
@@ -621,9 +628,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("📄 페이지 로드됨:", window.location.pathname);
     
     // 🔥 TTS 사전 초기화 (즉시 시작)
-    setTimeout(() => {
-        preWarmTTS();
-    }, 100); // 페이지 로드 후 0.1초 뒤 즉시 시작
+    preWarmTTS(); // setTimeout 제거하고 즉시 실행
     
     // WebSocket 연결
     createWebSocket();
