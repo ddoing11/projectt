@@ -226,14 +226,12 @@ async function preWarmTTS() {
   if (ttsPreWarmed) return;
   console.log("🔥 TTS 사전 초기화 시작...");
   try {
-    // SDK 로드 (5s 타임아웃)
     const loadPromise = loadAzureSpeechSDK();
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("SDK 로드 타임아웃")), 5000)
     );
     await Promise.race([loadPromise, timeoutPromise]);
 
-    // 토큰 프리페치 (3s 타임아웃)
     console.log("🔄 TTS 토큰 사전 요청...");
     const tokenPromise = fetch("/api/tts-token/");
     const tokenTimeout = new Promise((_, reject) =>
@@ -244,7 +242,6 @@ async function preWarmTTS() {
     const { token, region, error } = await res.json();
     if (error) throw new Error(`TTS token error: ${error}`);
 
-    // Synthesizer 생성 (스피커 출력)
     console.log("🔄 Azure TTS 사전 설정...");
     const speechConfig =
       window.SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
@@ -308,7 +305,6 @@ async function speakText(text, activateMic = true) {
       return;
     }
 
-    // Azure SDK 사용
     await new Promise(async (resolve) => {
       const finish = () => {
         console.log("🔊 Azure TTS 완료");
@@ -396,7 +392,6 @@ function playNextTtsAudio() {
   ttsAudioPlaying = true;
   (async () => {
     if (!audioContextUnlocked) await unlockAudioContext();
-    // Web Audio decode 경로 사용 (안정적)
     try {
       await playBase64Audio(item.base64);
     } catch (e) {
@@ -424,7 +419,6 @@ async function playDingAsync() {
 }
 
 function playDing() {
-  // 호환 함수 (동기식 wrapper)
   playDingAsync();
 }
 
@@ -442,8 +436,8 @@ function startRecognition() {
     }
     recognition = new SR();
     recognition.lang = "ko-KR";
-    recognition.interimResults = false; // 🔒 중간결과 전송 차단 (핵심)
-    recognition.continuous = false;     // 한 발화 → onend → 서버 재요청 흐름
+    recognition.interimResults = false; // 최종만
+    recognition.continuous = false;     // 한 발화 단위
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -465,11 +459,8 @@ function startRecognition() {
 
       console.log("🎤 인식된 텍스트:", transcript, "final:", isFinal);
 
-      // ✅ 최종 결과만 서버로 전송
       if (isFinal && socket?.readyState === WebSocket.OPEN) {
         socket.send(transcript);
-        // 필요시 JSON 형식으로도 보내고 싶다면 아래 한줄만 주석 해제
-        // socket.send(JSON.stringify({ type: "user_text", text: transcript }));
       }
     };
 
@@ -498,7 +489,6 @@ function startRecognition() {
     recognition.onend = () => {
       console.log("🛑 음성 인식 종료");
       recognizing = false;
-      // mic_on 이후 재시도 윈도우 내라면 자동 재시작
       if (!isSpeaking && Date.now() < sttRetryWindowUntil) {
         console.log("🔄 onend → 자동 재시작");
         setTimeout(() => startRecognition(), 250);
@@ -513,7 +503,6 @@ function startRecognition() {
 }
 
 function stopRecognition() {
-  // SpeechRecognition 정지 + onend 자동재시작 막기
   try {
     recognition?.stop?.();
   } catch {}
@@ -521,7 +510,6 @@ function stopRecognition() {
 
 /* ------------------ WebSocket ------------------ */
 function createWebSocket() {
-  // 같은 호스트면 로컬 8002, 아니면 해당 호스트:8002 (TLS 없으면 ws 사용)
   const WS_HOST = window.location.hostname || "127.0.0.1";
   const wsUrl = `ws://${WS_HOST}:8002`;
 
@@ -545,7 +533,11 @@ function createWebSocket() {
     if (window.location.pathname === "/pay_all") {
       setTimeout(() => {
         if (socket.readyState === WebSocket.OPEN) {
+          // 표 행 업데이트
           socket.send("read_cart");
+          // 서버에 결제안내 TTS 요청
+          socket.send("pay_all_ready");
+          // 이어서 자동 응답 받을 수 있게 마이크 요청
           setTimeout(() => socket.send("request_mic_on"), 1000);
         }
       }, 200);
@@ -555,40 +547,30 @@ function createWebSocket() {
   socket.onmessage = async (event) => {
     console.log("📥 WebSocket 메시지:", event.data);
 
-    // 문자열로 오는 play_ding (구버전 호환)
     if (typeof event.data === "string" && event.data.trim() === "play_ding") {
       playDing();
       return;
     }
 
-    // JSON 처리
     try {
       const data = JSON.parse(event.data);
 
-      // 서버 MP3(base64) TTS
       if (data.type === "tts_audio") {
         const { data: b64, activate_mic, play_ding } = data;
-
-        // TTS 중에는 STT 끄기
         stopRecognition();
         isSpeaking = true;
 
-        // 직렬 재생(큐) — 여기선 즉시 재생 후 완료 대기 + (딩) + mic_on 요청
         await playBase64Audio(b64).catch((e) =>
           console.error("tts_audio 재생 실패:", e)
         );
 
-        // (띵)
         if (play_ding) await playDingAsync();
 
         isSpeaking = false;
-
-        // 서버 주도 프로토콜: 클라가 mic_on을 직접 켜지 않고 "request_mic_on"만 전송
         if (activate_mic) requestMicOn();
         return;
       }
 
-      // 서버가 텍스트만 보낼 때(브라우저/Azure 텍스트 합성 경로)
       if (data.type === "text_to_speech") {
         const activateMic = data.activate_mic !== false;
         queueTts(data.text, activateMic);
@@ -601,7 +583,7 @@ function createWebSocket() {
       }
 
       if (data.type === "cart_items") {
-        updateCartDisplay(data.items);
+        updateCartDisplay(data.items, data.total);
         return;
       }
 
@@ -610,14 +592,13 @@ function createWebSocket() {
         return;
       }
     } catch {
-      // JSON 아닌 경우 아래 스위치 처리
+      // JSON 아닐 때 아래 switch
     }
 
     const text = (event.data || "").trim();
 
     switch (text) {
       case "mic_on":
-        // TTS 직후 자동 재시작 여유 시간(예: 8초)
         sttRetryWindowUntil = Date.now() + 8000;
         if (!isSpeaking) setTimeout(startRecognition, 150);
         break;
@@ -680,7 +661,7 @@ function createWebSocket() {
 }
 
 /* ------------------ UI 보조 ------------------ */
-function updateCartDisplay(items) {
+function updateCartDisplay(items, totalFromServer) {
   const tableContent = document.getElementById("cart-items");
   if (tableContent) {
     tableContent.innerHTML = items
@@ -694,6 +675,28 @@ function updateCartDisplay(items) {
       )
       .join("");
     console.log("🧾 장바구니 표시 업데이트");
+  }
+
+  // 총액 표시 갱신
+  let total = Number(totalFromServer || 0);
+  if (!total) {
+    total = (items || []).reduce((s, it) => s + Number(it.price || 0) * Number(it.count || 1), 0);
+  }
+  const fmt = `${Number(total).toLocaleString()}원`;
+
+  // 우선순위: #total-price → .total-price → [data-role="total"] → 텍스트 노드 추정
+  const el =
+    document.getElementById("total-price") ||
+    document.querySelector(".total-price") ||
+    document.querySelector('[data-role="total"]');
+
+  if (el) {
+    el.textContent = fmt;
+  } else {
+    // fallback: “총 0원” 처럼 표시된 요소를 찾고 교체 (간단 탐색)
+    const candidates = Array.from(document.querySelectorAll("div,span,strong,b"));
+    const target = candidates.find((n) => /총\s*[0-9,]*\s*원/.test(n.textContent || ""));
+    if (target) target.textContent = `총 ${fmt}`;
   }
 }
 
@@ -709,13 +712,9 @@ function showPaymentPopup() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("📄 페이지 로드됨:", window.location.pathname);
 
-  // TTS 사전 초기화 즉시 시작
   preWarmTTS();
-
-  // WebSocket 연결
   createWebSocket();
 
-  // order 페이지 상태 복구
   if (/^\/order\/?$/.test(window.location.pathname)) {
     const disableVoice = localStorage.getItem("disableVoice") === "true";
     if (disableVoice) localStorage.removeItem("disableVoice");
@@ -727,7 +726,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 300);
   }
 
-  // 결제 버튼 이벤트
   const payButton = document.querySelector(".pay-button");
   if (payButton) {
     payButton.addEventListener("click", () => {
@@ -745,7 +743,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // start 페이지 클릭 → 오디오 컨텍스트 해제 + 서버에 시작 알림
   document.addEventListener("click", async () => {
     if (
       window.location.pathname === "/" ||
